@@ -5,6 +5,9 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 ## [Unreleased]
 
 ### Added
+- M8 MCP server: `grantcheck mcp` serves `check_readiness`, `find_ein`, `explain_check`, and
+  `dataset_vintages` over stdio, every one calling the same `build_report()` the CLI calls.
+  Eleven plain-English check explainers, also served by `grantcheck explain <check_id>`.
 - M7 output formats: `--format table|markdown|json`, a committed JSON Schema for the
   version 1.0 contract that real output is validated against in the test suite, and the
   documented exit codes 0 to 4 verified end to end against the real index.

@@ -123,6 +123,36 @@ def _report(ein: str, *, uei: str | None = None, output_format: str = "table") -
     return report.exit_code
 
 
+@main.command("mcp")
+def mcp() -> None:
+    """Run the Model Context Protocol server on stdio, for use from an agent."""
+    from grantcheck.mcp_server import serve
+
+    serve()
+
+
+@main.command("explain")
+@click.argument("check_id", required=False)
+def explain(check_id: str | None) -> None:
+    """Explain what a check means and what to do about it."""
+    from grantcheck import explanations
+
+    if not check_id:
+        click.echo("Available checks:")
+        for available in explanations.available():
+            click.echo(f"  {available}")
+        return
+
+    text = explanations.get(check_id)
+    if text is None:
+        click.echo(f"Error: no explainer for {check_id!r}.", err=True)
+        click.echo("Available checks:", err=True)
+        for available in explanations.available():
+            click.echo(f"  {available}", err=True)
+        raise SystemExit(EXIT_ERROR)
+    _write_utf8(text)
+
+
 @main.command("cache")
 @click.argument("action", type=click.Choice(["info", "clear"]))
 def cache(action: str) -> None:

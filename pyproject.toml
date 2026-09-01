@@ -60,6 +60,7 @@ packages = ["src/grantcheck"]
 # living only in the repository. The hosted site validates against the same file.
 [tool.hatch.build.targets.wheel.force-include]
 "src/grantcheck/data/report-schema-1.0.json" = "grantcheck/data/report-schema-1.0.json"
+"src/grantcheck/explanations" = "grantcheck/explanations"
 
 [dependency-groups]
 dev = [
