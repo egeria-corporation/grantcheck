@@ -75,6 +75,34 @@ the ways below. These are now encoded in `src/grantcheck/ingest/teos.py` and its
 7. **The BMF header carries 28 columns**, including `ACTIVITY`, `ASSET_CD`, `INCOME_CD`, and
    `ACCT_PD`, which the column table below omits.
 
+### Cross-check against ProPublica, 2026-09-01
+
+Twenty subsection-03 organizations sampled across eight shards of the built index and compared
+against the ProPublica Nonprofit Explorer API, as section 10 of the build prompt requires.
+
+**Subsection agreed 20 out of 20.** Every disagreement was on the tax period, and the pattern is
+systematic rather than random:
+
+- Our value is **never older** than ProPublica's.
+- It is ahead by exactly **12 months in 4 cases and 24 months in 6**, plus one outlier at 156.
+- The **fiscal month-of-year matches in every pair** — same year-end, a different year's return.
+
+The two fields measure different things, which is the whole point. Ours is the BMF `TAX_PERIOD`,
+the most recent return the IRS has **processed**. ProPublica's `filings_with_data` reports the most
+recent return it has **parsed XML for**, and XML publication trails BMF processing by one to two
+filing cycles.
+
+This is confirmation rather than a defect, and it is why `TAX_PERIOD` is labelled a fallback, never
+rendered as a filing date, and capped at a warning in `filing_recency`. Reading it as a filing date
+would put us one to two years optimistic — the safe direction for a delinquency count, since it
+cannot manufacture a false accusation, but wrong nonetheless.
+
+**The 156-month outlier is trap 3 seen from the other side.** Western Forest Insect Work Conference
+(EIN 93-0078709) shows 2012 at ProPublica and 2025 in the BMF. ProPublica's `filings_with_data`
+covers parsed XML only, and Form 990-N e-Postcard filings are not in it. An organization that
+switched to the 990-N simply stops appearing there. That is exactly why filing recency has to union
+the e-Postcard file rather than trusting an XML-derived source alone.
+
 ---
 
 ### Cross-cutting gotchas for all four files
