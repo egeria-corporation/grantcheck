@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "check-opengrants-io",
+  "main": "src/index.tsx",
+  "compatibility_date": "2026-01-01",
+  "observability": { "enabled": true },
+
+  // Edge SSR from D1, not a pre-rendered site. There are ~1.4M 501(c)(3) organizations and
+  // Cloudflare Pages allows 20,000 files per deployment on the free plan, 100,000 on paid.
+  // Pre-rendering one page per organization exceeds the paid ceiling by an order of
+  // magnitude and blows the 20-minute build timeout. See docs/ADR-001.md.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "grantcheck",
+      "database_id": "PLACEHOLDER_SET_AT_DEPLOY"
+    }
+  ]
+}

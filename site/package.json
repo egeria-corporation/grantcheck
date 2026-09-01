@@ -1,0 +1,27 @@
+{
+  "name": "check-opengrants-io",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hosted companion to grantcheck: a permanent, citable federal grant readiness page per EIN.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "biome check . && tsc --noEmit",
+    "format": "biome format --write .",
+    "test": "vitest run",
+    "db:seed:local": "wrangler d1 execute grantcheck --local --file=./schema.sql",
+    "seed": "node scripts/seed-from-index.mjs"
+  },
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "@types/node": "^26.4.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^4.0.0"
+  }
+}

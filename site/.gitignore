@@ -1,0 +1,6 @@
+node_modules/
+.wrangler/
+dist/
+# Generated from the published index by scripts/seed_from_index.py: 1.2 MB of INSERTs,
+# reproducible in one command, and not something to review in a diff.
+seed.sql

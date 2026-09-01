@@ -1,0 +1,22 @@
+{
+  "bmf": {
+    "dataset": "bmf",
+    "published": "2026-08-10",
+    "source_url": "https://www.irs.gov/pub/irs-soi/eo1.csv"
+  },
+  "pub78": {
+    "dataset": "pub78",
+    "published": "2026-08-11",
+    "source_url": "https://apps.irs.gov/pub/epostcard/data-download-pub78.zip"
+  },
+  "revocation": {
+    "dataset": "revocation",
+    "published": "2026-08-11",
+    "source_url": "https://apps.irs.gov/pub/epostcard/data-download-revocation.zip"
+  },
+  "epostcard": {
+    "dataset": "epostcard",
+    "published": "2026-08-31",
+    "source_url": "https://apps.irs.gov/pub/epostcard/data-download-epostcard.zip"
+  }
+}

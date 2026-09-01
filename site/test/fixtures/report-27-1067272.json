@@ -1,0 +1,198 @@
+{
+  "schema_version": "1.0",
+  "ein": "27-1067272",
+  "queried_at": "2026-09-01T21:01:07.351838+00:00",
+  "organization": {
+    "ein": "27-1067272",
+    "name": "CODE FOR AMERICA LABS",
+    "sort_name": null,
+    "city": "SAN FRANCISCO",
+    "state": "CA",
+    "ntee_code": "W20",
+    "subsection": "03",
+    "classification": "1200",
+    "foundation_code": "15",
+    "group_exemption": "0000",
+    "ruling_date": "2010-06",
+    "uei": null
+  },
+  "checks": [
+    {
+      "id": "exempt_status",
+      "label": "Exempt status",
+      "group": "tax_exemption",
+      "status": "pass",
+      "blocking": true,
+      "value": "501(c)(3), unconditional exemption",
+      "detail": "Recognized under section 501(c)(3), ruling dated 2010-06.",
+      "vintage": {
+        "dataset": "bmf",
+        "published": "2026-08-10",
+        "source_url": "https://www.irs.gov/pub/irs-soi/eo1.csv"
+      },
+      "confidence": null
+    },
+    {
+      "id": "pub78_deductibility",
+      "label": "Pub 78 deductibility",
+      "group": "tax_exemption",
+      "status": "pass",
+      "blocking": false,
+      "value": "Listed — PC (public charity)",
+      "detail": "Listed in IRS Publication 78, the roster of organizations eligible to receive tax-deductible charitable contributions.",
+      "vintage": {
+        "dataset": "pub78",
+        "published": "2026-08-11",
+        "source_url": "https://apps.irs.gov/pub/epostcard/data-download-pub78.zip"
+      },
+      "confidence": null
+    },
+    {
+      "id": "auto_revocation",
+      "label": "Auto-revocation",
+      "group": "tax_exemption",
+      "status": "pass",
+      "blocking": true,
+      "value": "No revocation on record",
+      "detail": "This EIN does not appear on the IRS Automatic Revocation of Exemption List.",
+      "vintage": {
+        "dataset": "revocation",
+        "published": "2026-08-11",
+        "source_url": "https://apps.irs.gov/pub/epostcard/data-download-revocation.zip"
+      },
+      "confidence": null
+    },
+    {
+      "id": "organization_type",
+      "label": "Organization type",
+      "group": "tax_exemption",
+      "status": "pass",
+      "blocking": false,
+      "value": "Public charity — publicly supported organization",
+      "detail": "Not classified as a private foundation, so the exclusion most federal programs apply to private foundations does not bite here.",
+      "vintage": {
+        "dataset": "bmf",
+        "published": "2026-08-10",
+        "source_url": "https://www.irs.gov/pub/irs-soi/eo1.csv"
+      },
+      "confidence": null
+    },
+    {
+      "id": "most_recent_filing",
+      "label": "Most recent Form 990",
+      "group": "filing_health",
+      "status": "pass",
+      "blocking": false,
+      "value": "Tax period ending 2024-12",
+      "detail": "This is the period of the most recent return the IRS has processed, at month precision, taken from the Business Master File. It is not a filing date: processing lags filing by weeks to more than a year, so the actual return may be considerably more recent.",
+      "vintage": {
+        "dataset": "bmf",
+        "published": "2026-08-10",
+        "source_url": "https://www.irs.gov/pub/irs-soi/eo1.csv"
+      },
+      "confidence": null
+    },
+    {
+      "id": "filing_recency",
+      "label": "Years since filing",
+      "group": "filing_health",
+      "status": "pass",
+      "blocking": false,
+      "value": "1 (from the most recent processed return)",
+      "detail": "Roughly 1 year(s) since the end of the most recent tax period the IRS has processed. This comes from the Business Master File, which records a processing period rather than a filing date and can lag actual filing by more than a year, so treat it as approximate. Automatic revocation triggers after three consecutive years without filing a Form 990, 990-EZ, or 990-N. Confirm against the IRS Tax Exempt Organization Search before acting on it.",
+      "vintage": {
+        "dataset": "bmf",
+        "published": "2026-08-10",
+        "source_url": "https://www.irs.gov/pub/irs-soi/eo1.csv"
+      },
+      "confidence": null
+    },
+    {
+      "id": "ntee",
+      "label": "NTEE classification",
+      "group": "filing_health",
+      "status": "pass",
+      "blocking": false,
+      "value": "W20 — Public and Societal Benefit",
+      "detail": "The IRS records this organization under NTEE code W20. NTEE codes are self-reported at application and are frequently out of date, so it is worth confirming it still describes the work.",
+      "vintage": {
+        "dataset": "bmf",
+        "published": "2026-08-10",
+        "source_url": "https://www.irs.gov/pub/irs-soi/eo1.csv"
+      },
+      "confidence": null
+    },
+    {
+      "id": "sam_registration",
+      "label": "SAM.gov registration",
+      "group": "federal_registration",
+      "status": "unknown",
+      "blocking": true,
+      "value": "Not checked",
+      "detail": "This index build does not include SAM.gov data, so registration status, expiration, and Unique Entity ID were not checked. Nothing here says anything about the organization's registration — check it directly at https://sam.gov.",
+      "vintage": null,
+      "confidence": null
+    },
+    {
+      "id": "sam_expiration",
+      "label": "Registration expires",
+      "group": "federal_registration",
+      "status": "unknown",
+      "blocking": true,
+      "value": "Not checked",
+      "detail": "This index build does not include SAM.gov data, so registration status, expiration, and Unique Entity ID were not checked. Nothing here says anything about the organization's registration — check it directly at https://sam.gov.",
+      "vintage": null,
+      "confidence": null
+    },
+    {
+      "id": "uei",
+      "label": "Unique Entity ID",
+      "group": "federal_registration",
+      "status": "unknown",
+      "blocking": true,
+      "value": "Not checked",
+      "detail": "This index build does not include SAM.gov data, so registration status, expiration, and Unique Entity ID were not checked. Nothing here says anything about the organization's registration — check it directly at https://sam.gov.",
+      "vintage": null,
+      "confidence": null
+    },
+    {
+      "id": "single_audit",
+      "label": "Single audit",
+      "group": "audit_posture",
+      "status": "unknown",
+      "blocking": false,
+      "value": "Threshold $1,000,000 for the year beginning 2026-01-01",
+      "detail": "Your current fiscal year began 2026-01-01, so the threshold that applies to it is $1,000,000 in federal awards expended. It rose from $750,000 for years beginning before 2024-10-01. This tool cannot tell you how much you expended — that figure is not in the public datasets it publishes. Count everything federal, including subawards passed through a state agency, a university, or a larger nonprofit, and count what was spent rather than what was received. Your Schedule of Expenditures of Federal Awards is where that number lives.",
+      "vintage": {
+        "dataset": "bmf",
+        "published": "2026-08-10",
+        "source_url": "https://www.irs.gov/pub/irs-soi/eo1.csv"
+      },
+      "confidence": null
+    }
+  ],
+  "readiness": "ready",
+  "blocking_check_ids": [],
+  "opportunities": null,
+  "vintages": [
+    {
+      "dataset": "bmf",
+      "published": "2026-08-10",
+      "source_url": "https://www.irs.gov/pub/irs-soi/eo1.csv"
+    },
+    {
+      "dataset": "pub78",
+      "published": "2026-08-11",
+      "source_url": "https://apps.irs.gov/pub/epostcard/data-download-pub78.zip"
+    },
+    {
+      "dataset": "revocation",
+      "published": "2026-08-11",
+      "source_url": "https://apps.irs.gov/pub/epostcard/data-download-revocation.zip"
+    }
+  ],
+  "disclosure": "This is informational only, derived from public data on the dates shown. It is not an eligibility determination, and not legal, tax, or accounting advice. Verify against the official source before relying on it.",
+  "notes": [
+    "The dataset index could not be refreshed, so these vintages are from the local cache and may not be the newest published."
+  ]
+}
