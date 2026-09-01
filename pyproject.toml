@@ -56,10 +56,19 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/grantcheck"]
 
+# The JSON Schema is part of the public contract, so it ships with the package rather than
+# living only in the repository. The hosted site validates against the same file.
+[tool.hatch.build.targets.wheel.force-include]
+"src/grantcheck/data/report-schema-1.0.json" = "grantcheck/data/report-schema-1.0.json"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
+    # Test-only. Validates real output against the committed JSON Schema, so a change to
+    # the public contract cannot pass CI unnoticed. Never a runtime dependency: it would
+    # cost uvx cold-start time for something users do not need.
+    "jsonschema>=4.20",
 ]
 
 [tool.uv]

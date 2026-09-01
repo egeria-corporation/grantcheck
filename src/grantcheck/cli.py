@@ -14,7 +14,8 @@ import click
 from grantcheck import __version__
 from grantcheck.ein import InvalidEIN
 from grantcheck.models import EXIT_ERROR
-from grantcheck.render import table
+from grantcheck.render import json as json_render
+from grantcheck.render import markdown, table
 from grantcheck.report import build_report
 from grantcheck.sources.index import IndexClient, IndexUnavailable
 
@@ -39,6 +40,14 @@ These exist so a whole client roster can be checked from a script.
 @click.version_option(__version__, "-V", "--version", prog_name="grantcheck")
 @click.option("--ein", help="The EIN to check, with or without the hyphen.")
 @click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["table", "markdown", "json"]),
+    default="table",
+    show_default=True,
+    help="table for a terminal, markdown to paste into a memo, json for a machine.",
+)
+@click.option(
     "--uei",
     help=(
         "Pin the SAM.gov registration by Unique Entity ID, skipping name matching. "
@@ -46,7 +55,7 @@ These exist so a whole client roster can be checked from a script.
     ),
 )
 @click.pass_context
-def main(ctx: click.Context, ein: str | None, uei: str | None) -> None:
+def main(ctx: click.Context, ein: str | None, uei: str | None, output_format: str) -> None:
     """Check whether an organization is mechanically ready to apply for federal grants.
 
     Reports observable facts from public IRS data, each with its source and publication
@@ -57,10 +66,42 @@ def main(ctx: click.Context, ein: str | None, uei: str | None) -> None:
     if ein is None:
         click.echo(ctx.get_help())
         return
-    ctx.exit(_report(ein, uei=uei))
+    ctx.exit(_report(ein, uei=uei, output_format=output_format))
 
 
-def _report(ein: str, *, uei: str | None = None) -> int:
+# Markdown and JSON are file formats: they get redirected into a document, committed, or
+# posted to an API, and they are UTF-8 by definition. On Windows a redirected stdout
+# defaults to the ANSI code page, so `grantcheck --format markdown > report.md` wrote
+# cp1252 and produced a file that is not valid UTF-8 anywhere else.
+#
+# Reconfiguring sys.stdout is not enough: click caches its own text wrapper around the
+# original stream on first use, so the characters are already replaced by the time the
+# encoding changes. Writing encoded bytes to the underlying buffer is unambiguous.
+#
+# The table format is deliberately NOT forced. It is terminal output, and the renderer
+# already adapts to whatever the terminal can actually display.
+FILE_FORMATS = {"markdown", "json"}
+
+
+def _write_utf8(text: str) -> None:
+    """Write text to stdout as UTF-8 regardless of the platform default."""
+    buffer = getattr(sys.stdout, "buffer", None)
+    if buffer is None:
+        # A captured stream, as in tests. It is already text and already unicode-safe.
+        click.echo(text, nl=False)
+        return
+    buffer.write(text.encode("utf-8"))
+    buffer.flush()
+
+
+RENDERERS = {
+    "table": lambda r: table.render(r),
+    "markdown": markdown.render,
+    "json": json_render.render,
+}
+
+
+def _report(ein: str, *, uei: str | None = None, output_format: str = "table") -> int:
     """Build and print one report. Returns the process exit code."""
     client = IndexClient()
     try:
@@ -74,7 +115,11 @@ def _report(ein: str, *, uei: str | None = None) -> int:
     finally:
         client.close()
 
-    click.echo(table.render(report), nl=False)
+    rendered = RENDERERS[output_format](report)
+    if output_format in FILE_FORMATS:
+        _write_utf8(rendered)
+    else:
+        click.echo(rendered, nl=False)
     return report.exit_code
 
 

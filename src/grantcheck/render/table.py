@@ -81,6 +81,32 @@ def supports_unicode(stream: object | None = None) -> bool:
     return True
 
 
+# Typographic characters that reach the output from check values and labels, not just from
+# this module's own glyphs. A check value like "Listed — PC" carries an em dash regardless
+# of what the renderer does, so ASCII mode needs a real transliteration rather than a
+# glyph table. The final catch-all guarantees the string encodes on a genuinely ASCII
+# stream, which is what LANG=C gives you.
+_ASCII_MAP = {
+    chr(0x2014): "--",  # em dash
+    chr(0x2013): "-",  # en dash
+    chr(0x00B7): "-",  # middle dot, the subtitle separator
+    chr(0x2500): "-",  # box drawing horizontal, the footer rule
+    chr(0x2018): "'",  # left single quote
+    chr(0x2019): "'",  # right single quote
+    chr(0x201C): '"',  # left double quote
+    chr(0x201D): '"',  # right double quote
+    chr(0x2026): "...",  # ellipsis
+    chr(0x00A0): " ",  # non-breaking space
+}
+
+
+def asciify(text: str) -> str:
+    """Make a rendered string safe for a stream that can only carry ASCII."""
+    for char, replacement in _ASCII_MAP.items():
+        text = text.replace(char, replacement)
+    return text.encode("ascii", "replace").decode("ascii")
+
+
 def _wrap(text: str, *, indent: str, width: int = WIDTH) -> list[str]:
     return textwrap.wrap(text, width=width, initial_indent=indent, subsequent_indent=indent) or [
         indent.rstrip()
@@ -140,7 +166,8 @@ def render(
         for line in _wrap(_not_found_explanation(), indent=INDENT):
             out.append(line)
         out.extend(_footer(report, use_unicode=use_unicode))
-        return "\n".join(out) + "\n"
+        rendered = "\n".join(out) + "\n"
+        return rendered if use_unicode else asciify(rendered)
 
     # -- Blocking failures first --------------------------------------------------------
     blocking = [c for c in report.checks if c.id in report.blocking_check_ids]
@@ -164,7 +191,8 @@ def render(
             out.extend(_render_check(check, glyphs, paint, detail=needs_detail))
 
     out.extend(_footer(report, use_unicode=use_unicode))
-    return "\n".join(out) + "\n"
+    rendered = "\n".join(out) + "\n"
+    return rendered if use_unicode else asciify(rendered)
 
 
 def _subtitle(report: Report) -> str:

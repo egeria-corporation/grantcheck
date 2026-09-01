@@ -5,6 +5,9 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 ## [Unreleased]
 
 ### Added
+- M7 output formats: `--format table|markdown|json`, a committed JSON Schema for the
+  version 1.0 contract that real output is validated against in the test suite, and the
+  documented exit codes 0 to 4 verified end to end against the real index.
 - M6 single audit screen: the threshold rule (`$750,000` for fiscal years beginning before
   2024-10-01, `$1,000,000` on or after), fiscal-year inference from the Business Master
   File accounting period, and a check that is a screen rather than a determination — never
@@ -38,6 +41,13 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 - Repository scaffolding: documentation, research dossier, and build prompts.
 
 ### Fixed
+- `--format markdown > report.md` wrote cp1252 rather than UTF-8 on Windows, producing a
+  file that is not valid UTF-8 anywhere else. Markdown and JSON are file formats and are
+  now written as UTF-8 bytes on every platform. Reconfiguring `sys.stdout` was not
+  sufficient, because click caches its own text wrapper around the original stream.
+- Terminal output could still emit non-ASCII when the stream could not carry it: check
+  values contain typographic characters (an em dash in `Listed — PC`) independently of the
+  renderer's own glyphs. ASCII mode now transliterates the whole rendered string.
 - Private foundations were reported as having no annual return required. They carry
   `FILING_REQ_CD=00`, which alone reads that way, but 129,561 of them also carry
   `PF_FILING_REQ_CD=1` and file a Form 990-PF — and are subject to the same three-year
