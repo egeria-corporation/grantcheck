@@ -207,6 +207,63 @@ footer.site a { color: var(--ink-soft); }
 ul.plain { list-style: none; padding: 0; margin: 16px 0; }
 ul.plain li { padding: 7px 0; border-bottom: 1px solid var(--line-soft); }
 .tag { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+
+/* Account pages. Same tokens as everything else, so signing in does not feel like
+   arriving at a different product. */
+.pagehead { display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; margin-top: 44px; }
+.pagehead h1 { margin: 0; }
+.subnav { margin-left: auto; display: flex; gap: 18px; font-size: 15px; }
+.subnav a { color: var(--ink-soft); text-decoration: none; }
+.subnav a:hover { color: var(--accent); text-decoration: underline; }
+
+form.stack { display: flex; flex-direction: column; gap: 16px; max-width: 420px; margin: 28px 0 8px; }
+form.stack label { display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; color: var(--ink-soft); }
+form.row { display: flex; gap: 10px; flex-wrap: wrap; margin: 26px 0 8px; }
+form.row input:first-child { flex: 0 1 220px; font-family: var(--mono); }
+form.row input { flex: 1 1 160px; }
+form.inline { display: inline; margin: 0; }
+
+input, textarea, select {
+  font: inherit;
+  padding: 11px 13px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  width: 100%;
+}
+textarea { font-family: var(--mono); font-size: 14px; line-height: 1.7; resize: vertical; }
+input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  align-self: flex-start;
+}
+@media (prefers-color-scheme: dark) { button { color: #0c1a16; } }
+button:hover { filter: brightness(1.08); }
+button.danger { background: var(--fail); color: #fff; }
+/* A button that reads as a link, for destructive-but-minor actions inside a table row,
+   where a filled button would shout. Still a button: it posts, so it must not be an <a>. */
+button.link {
+  background: none;
+  color: var(--ink-soft);
+  padding: 0;
+  font-weight: 400;
+  font-size: 13.5px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+button.link:hover { color: var(--accent); filter: none; }
+
+.formerror { border-left: 3px solid var(--fail); background: var(--fail-soft); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; font-size: 15px; max-width: var(--measure); }
+.formok { border-left: 3px solid var(--pass); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; font-size: 15px; max-width: var(--measure); }
 `;
 
 export type HeadProps = {
@@ -260,6 +317,10 @@ export const Page: FC<PropsWithChildren<HeadProps>> = ({
             <a href="/methodology">Methodology</a>
             <a href="/data">Data</a>
             <a href={REPO}>Source</a>
+            {/* Always the same link, for everyone. The gate redirects a signed-out visitor
+                to sign-in and a signed-in one straight to their roster, so the header needs
+                no per-request state and every page stays cacheable. */}
+            <a href="/roster">Roster</a>
           </nav>
         </div>
       </header>

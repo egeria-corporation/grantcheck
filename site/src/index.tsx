@@ -8,25 +8,20 @@
  */
 
 import { Hono } from "hono";
+import { getCookie } from "hono/cookie";
 import { cors } from "hono/cors";
+import { SESSION_COOKIE, accountForSession } from "./auth";
+import { runMonitoring } from "./monitor";
 import type { OrgRow, Vintage } from "./report";
-import { buildReport, formatEin } from "./report";
+import { buildReport, formatEin, normalizeEin } from "./report";
+import type { Bindings } from "./routes/account";
+import { accountRoutes } from "./routes/account";
 import { CheckExplainer, Data, Methodology } from "./views/content";
 import { Entity, NotFound } from "./views/entity";
 import { Landing } from "./views/landing";
 import { LLMS_TXT, ROBOTS_TXT } from "./views/robots";
 
-type Bindings = { DB: D1Database };
-
 const app = new Hono<{ Bindings: Bindings }>();
-
-/** Nine digits after normalization, or it never touches the database. */
-function normalizeEin(raw: string): string | null {
-  const digits = raw.replace(/[\s–—-]/g, "");
-  if (!/^[0-9]{9}$/.test(digits)) return null;
-  if (digits.startsWith("00")) return null; // the IRS does not issue prefix 00
-  return digits;
-}
 
 function canonicalUrl(c: { req: { url: string } }, path: string): string {
   const url = new URL(c.req.url);
@@ -63,8 +58,11 @@ const STATIC_CACHE = "public, s-maxage=86400";
 app.get("/", async (c) => {
   const v = await vintages(c.env.DB).catch(() => ({}) as Record<string, Vintage>);
   const vintage = Object.values(v)[0]?.published;
-  c.header("Cache-Control", STATIC_CACHE);
-  return c.html(<Landing canonical={canonicalUrl(c, "/")} vintage={vintage} />);
+  const signedIn = Boolean(await accountForSession(c.env.DB, getCookie(c, SESSION_COOKIE)));
+  // A signed-in visitor gets a private response, because the header differs. Signed out —
+  // which is every crawler and the overwhelming majority of visitors — is cached as before.
+  c.header("Cache-Control", signedIn ? "private, no-store" : STATIC_CACHE);
+  return c.html(<Landing canonical={canonicalUrl(c, "/")} vintage={vintage} signedIn={signedIn} />);
 });
 
 /** The form target. Never renders a result — results live at a shareable URL. */
@@ -211,6 +209,26 @@ app.get("/data", async (c) => {
 app.get("/robots.txt", (c) => c.text(ROBOTS_TXT, 200, { "Content-Type": "text/plain" }));
 app.get("/llms.txt", (c) => c.text(LLMS_TXT, 200, { "Content-Type": "text/plain" }));
 
+// Everything that needs a session. Mounted at the root rather than under a prefix because
+// /join and /roster are addresses people type; the file boundary is what keeps the gate
+// legible, not the URL shape. Mounted last so nothing it registers can shadow or re-wrap a
+// public route.
+app.route("/", accountRoutes);
+
 app.notFound((c) => c.text("Not found", 404));
 
-export default app;
+// Named, so tests can drive `app.request(...)` directly. The default export has to be the
+// Worker handler object rather than the app itself, because a cron trigger needs a
+// `scheduled` sibling to `fetch`.
+export { app };
+
+export default {
+  fetch: app.fetch,
+  /**
+   * Monthly monitoring. Fires after the ingest has had time to land, re-checks every saved
+   * organization, and emails only the accounts whose verdicts actually moved.
+   */
+  async scheduled(_event: ScheduledController, env: Bindings, ctx: ExecutionContext) {
+    ctx.waitUntil(runMonitoring(env));
+  },
+};

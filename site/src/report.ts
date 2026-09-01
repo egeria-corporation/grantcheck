@@ -67,6 +67,17 @@ export const DISCLOSURE =
   "eligibility determination, and not legal, tax, or accounting advice. Verify against the " +
   "official source before relying on it.";
 
+/**
+ * Label for a readiness value that came back from the database as a plain string.
+ *
+ * Round-tripping through D1 loses the union type, and every caller casting it back is a
+ * cast that will eventually be wrong. This narrows in one place and falls back to the raw
+ * value rather than rendering "undefined".
+ */
+export function verdictLabel(readiness: string): string {
+  return (VERDICT_LABEL as Record<string, string>)[readiness] ?? readiness;
+}
+
 export const VERDICT_LABEL: Record<Readiness, string> = {
   ready: "Ready to apply",
   attention: "Needs attention",
@@ -83,6 +94,21 @@ export const DATASET_NAMES: Record<string, string> = {
   sam: "SAM.gov Entity Management",
   fac: "the Federal Audit Clearinghouse",
 };
+
+/**
+ * Nine digits after normalization, or it never touches the database.
+ *
+ * Mirrors `grantcheck.ein.normalize`, including the narrowness of the rejection: all zeros
+ * is a placeholder, but the 00 *prefix* is real and issued. The IRS files carry 136
+ * organizations with it, 90 of them on the automatic revocation list — the answers this
+ * site most needs to give.
+ */
+export function normalizeEin(raw: string): string | null {
+  const digits = raw.replace(/[\s–—-]/g, "");
+  if (!/^[0-9]{9}$/.test(digits)) return null;
+  if (/^0{9}$/.test(digits)) return null; // a placeholder, not an EIN
+  return digits;
+}
 
 /** One denormalized row from D1, matching the Python index schema exactly. */
 export type OrgRow = {

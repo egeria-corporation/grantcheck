@@ -86,9 +86,12 @@ def main() -> int:
             ).fetchall()
             if pinned:
                 placeholders = ",".join("?" for _ in pinned)
-                got = list(got) + conn.execute(
-                    f"SELECT * FROM organization WHERE ein IN ({placeholders})", pinned
-                ).fetchall()
+                got = (
+                    list(got)
+                    + conn.execute(
+                        f"SELECT * FROM organization WHERE ein IN ({placeholders})", pinned
+                    ).fetchall()
+                )
             conn.close()
 
             if got and not columns:

@@ -74,13 +74,20 @@ CREATE TABLE IF NOT EXISTS account (
 -- Magic links: no passwords to store, hash, reset, or leak. The token column holds a hash
 -- of the token, never the token itself, so a database disclosure does not hand out live
 -- sessions.
+-- The email and name live HERE rather than in an account row, so that requesting a link
+-- for an address creates nothing. An account exists only once somebody has proved they can
+-- read that inbox. Otherwise anyone could manufacture account rows for arbitrary addresses,
+-- and the sign-in email could not honestly say nothing was created.
 CREATE TABLE IF NOT EXISTS login_token (
   token_hash TEXT PRIMARY KEY,
-  account_id TEXT NOT NULL REFERENCES account(id),
+  email      TEXT NOT NULL,
+  name       TEXT NOT NULL,
   created_at TEXT NOT NULL,
   expires_at TEXT NOT NULL,
   used_at    TEXT
 );
+
+CREATE INDEX IF NOT EXISTS idx_login_token_email ON login_token(email, created_at);
 
 CREATE TABLE IF NOT EXISTS session (
   token_hash TEXT PRIMARY KEY,
@@ -92,11 +99,16 @@ CREATE TABLE IF NOT EXISTS session (
 -- A saved roster. This is the one place the site joins a person to a set of EINs, which the
 -- architecture's privacy section otherwise forbids — a deliberate, scoped exception that
 -- exists because monitoring cannot work without it. Deleting the account deletes the rows.
+-- last_readiness is what monitoring compares against. Storing the verdict rather than
+-- recomputing "what did it say last month" means an alert fires on an actual change, and a
+-- month where the ingest did not move anything sends nothing at all.
 CREATE TABLE IF NOT EXISTS roster_entry (
-  account_id TEXT NOT NULL REFERENCES account(id),
-  ein        TEXT NOT NULL,
-  label      TEXT,
-  added_at   TEXT NOT NULL,
+  account_id      TEXT NOT NULL REFERENCES account(id),
+  ein             TEXT NOT NULL,
+  label           TEXT,
+  added_at        TEXT NOT NULL,
+  last_readiness  TEXT,
+  last_checked_at TEXT,
   PRIMARY KEY (account_id, ein)
 );
 

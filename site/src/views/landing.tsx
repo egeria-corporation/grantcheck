@@ -19,7 +19,11 @@ const DESCRIPTION =
   "grants: 501(c)(3) status, Publication 78, automatic revocation, filing recency, SAM.gov " +
   "registration, and the single audit threshold. Every fact carries its source and date.";
 
-export const Landing: FC<{ canonical: string; vintage?: string }> = ({ canonical, vintage }) => (
+export const Landing: FC<{ canonical: string; vintage?: string; signedIn?: boolean }> = ({
+  canonical,
+  vintage,
+  signedIn,
+}) => (
   <Page
     title={TITLE}
     description={DESCRIPTION}
@@ -165,6 +169,47 @@ export const Landing: FC<{ canonical: string; vintage?: string }> = ({ canonical
         </p>
       </div>
     </div>
+
+    <h2>More than one at a time</h2>
+    <p class="prose">
+      Everything above is free and needs no account, and that will not change — a report is a public
+      fact about a public record. What an email address unlocks is the part that has to remember
+      something:
+    </p>
+    <div class="grid">
+      <div class="card">
+        <h3>Check a whole list</h3>
+        <p>
+          Paste up to 200 EINs and get one table. A funder screening applicants, a fiscal sponsor
+          reviewing projects, a consultant with a client list.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Get told when it changes</h3>
+        <p>
+          Save a roster and we re-check it against every monthly IRS release. You get an email only
+          when a verdict actually moves — not a digest, not a newsletter.
+        </p>
+      </div>
+      <div class="card">
+        <h3>Export it</h3>
+        <p>CSV of the whole roster with findings and dates, for a spreadsheet or a board packet.</p>
+      </div>
+    </div>
+    <p class="prose">
+      {signedIn ? (
+        <>
+          <a href="/roster">Open your roster</a>.
+        </>
+      ) : (
+        <>
+          <a href="/join">Sign in with an email address</a> — no password, and the link is the whole
+          of it. We send your sign-in link and the alerts you asked for, nothing else, and deleting
+          your account takes one button and happens immediately. Or skip us entirely: the{" "}
+          <a href={REPO}>command-line tool</a> does all of it on your own machine.
+        </>
+      )}
+    </p>
 
     <h2>Why you can check our work</h2>
     <p class="prose">

@@ -11,9 +11,24 @@
   // magnitude and blows the 20-minute build timeout. See docs/ADR-001.md.
   "d1_databases": [
     {
+      // Bound as DB rather than "grantcheck": the binding is the variable name the Worker
+      // sees, and env.DB reads better at every call site than env.grantcheck.
       "binding": "DB",
       "database_name": "grantcheck",
-      "database_id": "PLACEHOLDER_SET_AT_DEPLOY"
+      "database_id": "47f8d371-73d3-4eaa-ae9d-706fbf06d46c"
+    }
+  ],
+
+  // The 8th at 14:00 UTC. The IRS publishes the monthly files in the first week; this
+  // gives the ingest time to land before anyone is told their roster changed.
+  "triggers": {
+    "crons": ["0 14 8 * *"]
+  },
+
+  "routes": [
+    {
+      "pattern": "check.opengrants.io",
+      "custom_domain": true
     }
   ]
 }
