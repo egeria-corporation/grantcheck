@@ -66,11 +66,23 @@ class TestRejectedInput:
         with pytest.raises(InvalidEIN, match="no digits"):
             normalize("---")
 
-    def test_prefix_00_is_not_issued(self) -> None:
+    def test_all_zeros_is_a_placeholder(self) -> None:
         # Section 10 of the build prompt requires 00-0000000 to fail on format and never
         # reach the network.
-        with pytest.raises(InvalidEIN, match="starts with 00"):
+        with pytest.raises(InvalidEIN, match="all zeros"):
             normalize("00-0000000")
+
+    @pytest.mark.parametrize("raw", ["00-0841363", "00-1037180", "00-2030711"])
+    def test_prefix_00_is_issued_and_must_be_accepted(self, raw: str) -> None:
+        # An earlier version rejected the whole 00 prefix as "not issued by the IRS". The
+        # IRS's own files disprove it: the August 2026 index carries 136 organizations with
+        # prefix 00, of which 19 are in the Business Master File, 14 are listed in
+        # Publication 78, and 90 are on the automatic revocation list.
+        #
+        # Those 90 are why this matters. Refusing the prefix made the tool answer "not a
+        # valid EIN" for organizations whose exemption is genuinely revoked — an answer a
+        # caller reads as a typo rather than as the hard stop it actually is.
+        assert normalize(raw) == raw.replace("-", "")
 
     def test_well_formed_but_absent_ein_passes_format_validation(self) -> None:
         # 99-9999999 is well-formed. It must reach the index and come back not_found,

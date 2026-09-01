@@ -289,7 +289,7 @@ class TestExitCodes:
         # 00-0000000 must fail on format. A network call here would be a bug.
         result = CliRunner().invoke(main, ["--ein", "00-0000000"])
         assert result.exit_code == EXIT_ERROR
-        assert "starts with 00" in result.output + str(result.stderr_bytes or b"")
+        assert "all zeros" in result.output + str(result.stderr_bytes or b"")
 
     def test_malformed_ein_exits_one(self) -> None:
         result = CliRunner().invoke(main, ["--ein", "not-an-ein"])

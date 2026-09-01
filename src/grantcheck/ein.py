@@ -74,11 +74,20 @@ def normalize(raw: str) -> str:
             f"{raw!r} has {len(digits)} digits, but an EIN has {EIN_LENGTH}. {_EXPECTED}"
         )
 
-    # The IRS has never issued an EIN with prefix 00. Rejecting it here means a typo or a
-    # placeholder never reaches the network, which is what section 10 of the build prompt
-    # requires for 00-0000000.
-    if digits[:PREFIX_LENGTH] == "00":
-        raise InvalidEIN(f"{raw!r} starts with 00, which the IRS does not issue. {_EXPECTED}")
+    # All zeros is a placeholder, not an EIN, and rejecting it here keeps a typo or an empty
+    # database field from reaching the network — which is what section 10 of the build
+    # prompt asks for in naming 00-0000000.
+    #
+    # Note the narrowness. An earlier version rejected the whole 00 prefix, on the stated
+    # grounds that the IRS never issues it. That is false, and the IRS's own published files
+    # disprove it: the August 2026 index carries 136 organizations with prefix 00 — 19 in the
+    # Business Master File, 14 listed in Publication 78, and 90 on the automatic revocation
+    # list. Rejecting the prefix meant this tool answered "not a valid EIN" for 90
+    # organizations whose exemption is actually revoked, which is the most dangerous answer
+    # it could give: the caller reads it as a typo and moves on. Reject the placeholder, not
+    # the prefix.
+    if set(digits) == {"0"}:
+        raise InvalidEIN(f"{raw!r} is all zeros, which is a placeholder, not an EIN. {_EXPECTED}")
 
     return digits
 
