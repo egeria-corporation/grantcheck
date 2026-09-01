@@ -51,6 +51,7 @@ def _load_registry() -> list[tuple[str, CheckFn]]:
         pub78,
         sam_expiration,
         sam_registration,
+        single_audit,
         uei,
     )
 
@@ -65,6 +66,7 @@ def _load_registry() -> list[tuple[str, CheckFn]]:
         ("sam_registration", sam_registration.check),
         ("sam_expiration", sam_expiration.check),
         ("uei", uei.check),
+        ("single_audit", single_audit.check),
     ]
 
 

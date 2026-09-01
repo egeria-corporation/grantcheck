@@ -5,6 +5,11 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 ## [Unreleased]
 
 ### Added
+- M6 single audit screen: the threshold rule (`$750,000` for fiscal years beginning before
+  2024-10-01, `$1,000,000` on or after), fiscal-year inference from the Business Master
+  File accounting period, and a check that is a screen rather than a determination — never
+  a failure, and never silent about what the reported figure excludes. `acct_pd` is now
+  carried through the parser and the index schema.
 - M5 SAM.gov: `ingest/matching.py` infers the EIN-to-UEI link by normalized legal name and
   state with a published confidence score and tier, and the three federal-registration
   checks (`sam_registration`, `sam_expiration`, `uei`). `--uei` pins the match and skips

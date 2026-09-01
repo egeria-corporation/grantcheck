@@ -71,6 +71,7 @@ CREATE TABLE organization (
     tax_period               TEXT,   -- YYYY-MM; NOT a filing date
     filing_req_cd            TEXT,
     pf_filing_req_cd         TEXT,
+    acct_pd                  TEXT,   -- fiscal year-end month, "01".."12"
     ntee_cd                  TEXT,
 
     -- Publication 78
@@ -108,7 +109,7 @@ _ORG_COLUMNS = [
     "name", "sort_name", "city", "state", "zip", "group_exemption", "affiliation",
     "subsection", "classification", "ruling", "deductibility", "foundation",
     "organization_form", "exempt_status", "tax_period", "filing_req_cd",
-    "pf_filing_req_cd", "ntee_cd", "pub78_deductibility_code", "revocation_date",
+    "pf_filing_req_cd", "acct_pd", "ntee_cd", "pub78_deductibility_code", "revocation_date",
     "revocation_posting_date", "reinstatement_date", "epostcard_tax_year",
     "epostcard_period_end", "uei", "sam_status", "sam_expiration", "sam_purpose",
     "sam_match_confidence", "sam_match_method",
@@ -195,6 +196,7 @@ def merge_datasets(
             tax_period=row["tax_period"],
             filing_req_cd=row["filing_req_cd"],
             pf_filing_req_cd=row["pf_filing_req_cd"],
+            acct_pd=row["acct_pd"],
             ntee_cd=row["ntee_cd"],
         )
 

@@ -372,6 +372,10 @@ def parse_bmf(text: str) -> ParseResult:
                     "tax_period": month_field("TAX_PERIOD"),
                     "filing_req_cd": cell("FILING_REQ_CD"),
                     "pf_filing_req_cd": cell("PF_FILING_REQ_CD"),
+                    # Fiscal year-end month, "01".."12". The single audit threshold is
+                    # keyed on the fiscal year BEGIN date, so this is what decides whether
+                    # $750,000 or $1,000,000 applies to a given organization.
+                    "acct_pd": cell("ACCT_PD"),
                     "asset_amt": cell("ASSET_AMT"),
                     "income_amt": cell("INCOME_AMT"),
                     "revenue_amt": cell("REVENUE_AMT"),
