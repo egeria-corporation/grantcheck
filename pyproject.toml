@@ -97,6 +97,14 @@ select = [
     "RUF",  # ruff-specific
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# tests/test_ein.py deliberately contains Arabic-Indic, full-width, Myanmar, and
+# superscript digits, plus en and em dashes. RUF001-003 exist to catch exactly these
+# characters arriving by accident; here they are the fixtures under test, and the module
+# docstring says so. Flagging them would mean deleting the test that proves normalize()
+# does not fall for str.isdigit().
+"tests/test_ein.py" = ["RUF001", "RUF002", "RUF003"]
+
 [tool.ruff.format]
 docstring-code-format = true
 

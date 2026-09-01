@@ -5,6 +5,10 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 ## [Unreleased]
 
 ### Added
+- M1 models and EIN handling: `ein.py` (normalize, validate, format, shard-prefix
+  extraction) and `models.py` (`Report`, `Check`, `Vintage`, `Organization`,
+  `Opportunity`, `MatchConfidence`) with lossless JSON round-trip, the `schema_version`
+  contract, readiness derivation, and exit codes.
 - M0 skeleton: `pyproject.toml` with the `grantcheck` console entry point, `uv` project,
   `ruff` lint and format configuration, `pytest`, and the package layout under `src/`.
 - Program-level documents vendored under `docs/program/` so a fresh clone resolves every
