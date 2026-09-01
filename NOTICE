@@ -1,0 +1,134 @@
+grantcheck
+Copyright 2026 Egeria Corporation
+
+This product includes software developed by Egeria Corporation
+(https://github.com/egeria-corporation) and sponsored by OpenGrants
+(https://opengrants.io).
+
+Licensed under the Apache License, Version 2.0. See LICENSE for the full text.
+
+================================================================================
+UPSTREAM PROJECTS
+================================================================================
+
+This product depends on, derives from, or was materially informed by the
+following third-party works. Each is credited here, in the README Credits
+section, and in docs/research/prior-art.md.
+
+--------------------------------------------------------------------------------
+IRS E-file Master Concordance File
+--------------------------------------------------------------------------------
+  Author:   Nonprofit Open Data Collective
+  Source:   https://github.com/Nonprofit-Open-Data-Collective/irs-efile-master-concordance-file
+  Docs:     https://nonprofit-open-data-collective.github.io/irs-efile-master-concordance-file/
+  License:  See the LICENSE file in the upstream repository. Verify the current
+            terms before redistributing any derived concordance table.
+  Use:      grantcheck uses the concordance to resolve XPaths for the Form 990
+            filing-date and government-grants fields across IRS e-file schema
+            versions. A pinned subset is vendored under src/grantcheck/data/
+            with its upstream commit SHA recorded.
+
+--------------------------------------------------------------------------------
+form-990-xml-mapper
+--------------------------------------------------------------------------------
+  Author:   GivingTuesday (Giving-Tuesday)
+  Source:   https://github.com/Giving-Tuesday/form-990-xml-mapper
+  License:  See the upstream repository.
+  Use:      Used to enumerate and validate the XPath surface of the IRS e-file
+            schemas during development. No code vendored.
+
+--------------------------------------------------------------------------------
+form-990-xml-parser
+--------------------------------------------------------------------------------
+  Author:   GivingTuesday (Giving-Tuesday)
+  Source:   https://github.com/Giving-Tuesday/form-990-xml-parser
+  License:  See the upstream repository.
+  Use:      Reference implementation consulted during design. No code vendored.
+
+--------------------------------------------------------------------------------
+GivingTuesday 990 Data Programme — Form 990 Variable Dictionary
+--------------------------------------------------------------------------------
+  Author:   GivingTuesday
+  Source:   https://990data.givingtuesday.org/tool-repository/
+  Use:      Used to validate field selection and naming for the financial
+            fields surfaced in the single-audit screen.
+
+--------------------------------------------------------------------------------
+irsx / 990-xml-reader
+--------------------------------------------------------------------------------
+  Author:   Jacob Fenton
+  Source:   https://github.com/jsfenfen/990-xml-reader
+  License:  See the upstream repository.
+  Use:      Reference implementation for IRS e-file XML handling in Python.
+            Consulted during design; no code vendored.
+
+--------------------------------------------------------------------------------
+ProPublica Nonprofit Explorer API
+--------------------------------------------------------------------------------
+  Author:   ProPublica
+  Source:   https://projects.propublica.org/nonprofits/api
+  Terms:    https://www.propublica.org/about/propublica-data-terms-of-use
+  Use:      Optional gap-filling lookups and a development-time cross-check on
+            grantcheck's own parsing of IRS source files. Not redistributed.
+            Requests carry a descriptive User-Agent and are cached.
+
+--------------------------------------------------------------------------------
+propublica990
+--------------------------------------------------------------------------------
+  Author:   Punderthings / Shane Curcuru
+  Source:   https://github.com/Punderthings/propublica990
+  License:  See the upstream repository.
+  Use:      Prior art reviewed during design. No code vendored.
+
+--------------------------------------------------------------------------------
+open990odl
+--------------------------------------------------------------------------------
+  Author:   990 Consulting, LLC
+  Source:   https://github.com/990consulting/open990odl
+  License:  See the upstream repository.
+  Use:      Prior art reviewed during design. No code vendored.
+
+--------------------------------------------------------------------------------
+NBER Form 990 Data
+--------------------------------------------------------------------------------
+  Author:   National Bureau of Economic Research
+  Source:   https://www.nber.org/research/data/irs-form-990-data
+  Use:      Used as an independent cross-check on historical filing coverage.
+
+================================================================================
+GOVERNMENT DATA SOURCES
+================================================================================
+
+The following are works of the United States federal government. U.S. federal
+government works are generally not subject to copyright protection within the
+United States (17 U.S.C. Section 105). They are named here for provenance and
+for the data-honesty requirements this project holds itself to, not because a
+license requires it.
+
+  Internal Revenue Service — Tax Exempt Organization Search bulk data
+    (Exempt Organizations Business Master File, Publication 78 Data, Automatic
+    Revocation of Exemption List, Form 990-N e-Postcard file)
+    https://www.irs.gov/charities-non-profits/tax-exempt-organization-search-bulk-data-downloads
+
+  Internal Revenue Service — Form 990 Series Downloads (e-file XML and index)
+    https://www.irs.gov/charities-non-profits/form-990-series-downloads
+
+  General Services Administration — SAM.gov Entity Management API
+    https://open.gsa.gov/api/entity-api/
+    Public tier data only. Sensitive-tier fields are never requested, stored,
+    or redistributed by this project.
+
+  General Services Administration — Federal Audit Clearinghouse API
+    https://www.fac.gov/api/
+    Terms: https://www.fac.gov/api/terms/
+
+  Grants.gov — Search and opportunity APIs
+    https://grants.gov/api/api-guide
+
+================================================================================
+OPTIONAL SERVICES
+================================================================================
+
+  OpenGrants API — https://ops.opengrants.io/api-docs
+    Optional live enrichment. grantcheck is fully functional without it. No
+    OpenGrants data is redistributed by this repository.
