@@ -5,6 +5,10 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 ## [Unreleased]
 
 ### Added
+- M4 checks and terminal rendering: the seven non-SAM checks (exempt status, Publication 78
+  deductibility, automatic revocation, organization type, most recent filing, filing
+  recency, NTEE), `report.build_report()` as the single entry point both adapters call, the
+  terminal renderer, and `grantcheck --ein` and `grantcheck cache`.
 - M3 index build and client: `ingest/build.py` shards the merged datasets by EIN prefix
   into compressed SQLite with a checksummed manifest, and `sources/index.py` fetches,
   verifies, caches, and queries them. A real build produces 234 shards totalling 145 MB,
@@ -24,6 +28,13 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 - Repository scaffolding: documentation, research dossier, and build prompts.
 
 ### Fixed
+- Private foundations were reported as having no annual return required. They carry
+  `FILING_REQ_CD=00`, which alone reads that way, but 129,561 of them also carry
+  `PF_FILING_REQ_CD=1` and file a Form 990-PF — and are subject to the same three-year
+  automatic revocation counter. Only 4,507 organizations have both codes clear.
+- Terminal output used box-drawing and en-dash characters that a default Windows console
+  (cp1252) cannot encode, so the ASCII degradation path was incomplete and would have
+  raised `UnicodeEncodeError` instead of printing a report.
 - Organizations revoked more than once were reported using whichever row came last in the
   file. 19,136 EINs carry multiple rows on the Automatic Revocation List — revoked,
   reinstated, then revoked again — and the merge now selects by latest revocation date.
