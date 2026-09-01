@@ -19,3 +19,8 @@ data/interim/
 *.duckdb
 *.zip
 .DS_Store
+
+# Bulk downloads for ingest development. Hundreds of megabytes; never committed.
+# Fixtures under tests/fixtures/ are small real slices and ARE committed.
+data/raw/
+*.zip

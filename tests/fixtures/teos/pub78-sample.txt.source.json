@@ -1,0 +1,11 @@
+{
+  "source_url": "https://apps.irs.gov/pub/epostcard/data-download-pub78.zip",
+  "source_file": "pub78.zip",
+  "upstream_last_modified": "Tue, 11 Aug 2026 09:21:40 GMT",
+  "upstream_sha256": "e17c77cd46663d1c56518a3adea7c6e5dfb9565f85b10f29b891d356a6e50863",
+  "retrieved_at": "2026-09-01T16:44:26.818083+00:00",
+  "extracted_at": "2026-09-01T16:51:04.369294+00:00",
+  "rows": 23,
+  "note": "Real Publication 78 rows. Pipe-delimited, SIX fields, NO header row, and the real file opens with two blank lines which are reproduced here. Columns: EIN, name, city, state, country, deductibility code.",
+  "fixture_sha256": "f13bf0f891669d83056a55cba13f24ab5ff3c70e8d2ebe25326086eba946a70f"
+}

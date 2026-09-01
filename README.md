@@ -41,7 +41,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 Then run the tool. There is nothing to install, no account to create, and no key to obtain:
 
 ```bash
-uvx grantcheck --ein 27-0125367
+uvx grantcheck --ein 27-1067272
 ```
 
 That is the whole quickstart. The first run downloads a small slice of the prebuilt public-data
@@ -51,8 +51,8 @@ runs on the same range are instant and work offline.
 Other things you will want:
 
 ```bash
-uvx grantcheck --ein 27-0125367 --format markdown   # paste into a memo
-uvx grantcheck --ein 27-0125367 --format json       # pipe into something else
+uvx grantcheck --ein 27-1067272 --format markdown   # paste into a memo
+uvx grantcheck --ein 27-1067272 --format json       # pipe into something else
 uvx grantcheck --name "Code for America" --state CA # look up the EIN first
 uvx grantcheck refresh                              # pull the newest monthly IRS data
 uvx grantcheck explain auto_revocation              # what a specific check actually means
@@ -61,15 +61,15 @@ uvx grantcheck explain auto_revocation              # what a specific check actu
 ## What the report looks like
 
 ```
-$ grantcheck --ein 27-0125367
+$ grantcheck --ein 27-1067272
 
-  CODE FOR AMERICA LABS INC                                      EIN 27-0125367
-  San Francisco, CA · NTEE W99 · 501(c)(3) public charity
+  CODE FOR AMERICA LABS                                          EIN 27-1067272
+  San Francisco, CA · NTEE W20 · 501(c)(3) public charity
 
   READY TO APPLY                                        1 item needs attention
 
   TAX EXEMPTION
-  ✔  Exempt status          501(c)(3), unconditional exemption   ruling 2010-02
+  ✔  Exempt status          501(c)(3), unconditional exemption   ruling 2010-06
   ✔  Pub 78 deductibility   Listed — PC (public charity)         as of 2026-08-11
   ✔  Auto-revocation        No revocation on record              as of 2026-08-11
   ✔  Organization type      Public charity, not a private foundation
@@ -204,7 +204,7 @@ work around it here, and we record it in [`docs/research/prior-art.md`](docs/res
 ## Hosted version
 
 [check.opengrants.io](https://check.opengrants.io) runs the same checks in a browser with no
-install, and gives every organization a permanent, citable page at `/ein/27-0125367`. Same data,
+install, and gives every organization a permanent, citable page at `/ein/27-1067272`. Same data,
 same vintages, same disclosure. The design is documented in
 [`docs/hosted/architecture.md`](docs/hosted/architecture.md).
 

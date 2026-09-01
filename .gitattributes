@@ -8,3 +8,8 @@
 *.parquet binary
 *.sqlite binary
 *.zst binary
+
+# Test fixtures are exact slices of real upstream files and must keep their real bytes,
+# including the CRLF line endings the IRS ships. The eol=lf rule above would rewrite them
+# on checkout, and tests that assert on the real line endings would fail on Linux CI.
+tests/fixtures/** -text

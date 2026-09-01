@@ -1,0 +1,11 @@
+{
+  "source_url": "https://apps.irs.gov/pub/epostcard/data-download-revocation.zip",
+  "source_file": "revocation.zip",
+  "upstream_last_modified": "Tue, 11 Aug 2026 11:32:48 GMT",
+  "upstream_sha256": "97e36acc2df351ad2214176ef3bb0f8d4499115c54e5f008802c0468c1b9fcb2",
+  "retrieved_at": "2026-09-01T16:44:32.152626+00:00",
+  "extracted_at": "2026-09-01T16:51:05.665287+00:00",
+  "rows": 29,
+  "note": "Real Automatic Revocation of Exemption rows. Pipe-delimited, TWELVE fields, NO header, two leading blank lines reproduced. Column 11 (zero-indexed) is the reinstatement date and is populated for 181,259 of 1,246,171 rows in the 2026-08-11 vintage. Includes both reinstated and never-reinstated organizations: presence on this list does NOT mean currently revoked. Dates are DD-MON-YYYY.",
+  "fixture_sha256": "2a8220e1d8cb07b3c0f17b2e4a974b8c34e576e6fe9bfdc33a3c683c23bfc48f"
+}

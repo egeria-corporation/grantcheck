@@ -50,7 +50,7 @@ lookup.
 | Route | Rendering | Purpose |
 |---|---|---|
 | `/` | Static | Landing page and the EIN entry form. |
-| `/ein/{ein}` | Edge SSR, cached | **The canonical entity page.** Hyphenated EIN, e.g. `/ein/27-0125367`. |
+| `/ein/{ein}` | Edge SSR, cached | **The canonical entity page.** Hyphenated EIN, e.g. `/ein/27-1067272`. |
 | `/ein/{ein9}` | 301 | Unhyphenated form redirects to canonical. |
 | `/ein/{ein}/{slug}` | 301 | Any slug variant redirects to canonical. Never let two URLs serve one organization. |
 | `/check` | Edge, no cache | Form target. Resolves name or EIN input, then 302s to the canonical `/ein/{ein}`. Never renders a result itself — results must live at a shareable URL. |
@@ -245,7 +245,7 @@ bill grows for no benefit.
 than relying on expiry:
 
 ```
-https://check.opengrants.io/ein/27-0125367?v=<bmf>.<pub78>.<rev>.<epostcard>.<sam>
+https://check.opengrants.io/ein/27-1067272?v=<bmf>.<pub78>.<rev>.<epostcard>.<sam>
 ```
 
 The `v` parameter is constructed server-side from `dataset_vintage` and stripped before rendering.
@@ -293,7 +293,7 @@ with:
 Plus a `Dataset` block on `/data` and `FAQPage` markup on each `/checks/{check_id}` explainer,
 because those pages exist to answer a question verbatim.
 
-**One canonical URL per entity, keyed on the hyphenated EIN.** `/ein/27-0125367`. Every variant
+**One canonical URL per entity, keyed on the hyphenated EIN.** `/ein/27-1067272`. Every variant
 301s. `<link rel="canonical">` on every render, including the ones reached by redirect.
 
 **Sitemap index, chunked at 50,000 URLs per file**, generated at ingest time, gzipped, served from

@@ -16,7 +16,7 @@ they ask a consultant.
 
 Three jobs, in priority order:
 
-1. **A permanent, citable page per organization** at `/ein/27-0125367` that states the federal
+1. **A permanent, citable page per organization** at `/ein/27-1067272` that states the federal
    readiness facts with their sources and publication dates, in server-rendered HTML that a crawler
    with no JavaScript can read completely.
 2. **Answers to the questions people actually type** — "is my nonprofit eligible for federal
@@ -86,7 +86,7 @@ browse indexes. Everything keyed on an EIN is edge-rendered.
 Implement exactly the route table in `docs/hosted/architecture.md` section 2. The rules that are
 easy to get wrong:
 
-- **`/ein/{ein}` with the hyphen is canonical.** `/ein/270125367` and any slug variant 301 to it.
+- **`/ein/{ein}` with the hyphen is canonical.** `/ein/271067272` and any slug variant 301 to it.
   Two URLs must never serve one organization.
 - **`/check` never renders a result.** It resolves the input and 302s to the canonical entity URL,
   so every result lives at a shareable, cacheable, indexable address.
@@ -142,7 +142,7 @@ Read `dataset_vintage` once per isolate, hold it in module scope, and build a ve
 the concatenated vintages. Every cache key carries it:
 
 ```
-https://check.opengrants.io/ein/27-0125367?v=<bmf>.<pub78>.<rev>.<epostcard>.<sam>
+https://check.opengrants.io/ein/27-1067272?v=<bmf>.<pub78>.<rev>.<epostcard>.<sam>
 ```
 
 The `v` parameter is constructed server-side and stripped before rendering. **It never appears in a
@@ -266,7 +266,7 @@ index build, `dataset_vintage` populated.
 
 **H2 — The entity page.** `/ein/{ein}` edge-rendered from D1 with all checks, all sources, all
 vintages, and the disclosure. Canonical, redirects, 400 on malformed input, real 404 on absent.
-*Demo: `curl https://…/ein/27-0125367 | grep -c "2026-08-11"` finds the vintages in raw HTML.*
+*Demo: `curl https://…/ein/27-1067272 | grep -c "2026-08-11"` finds the vintages in raw HTML.*
 
 **H3 — Caching.** Vintage-keyed cache keys, the header matrix, stale-while-revalidate.
 *Demo: bump `dataset_vintage` and observe the whole cache invalidate; confirm the second request

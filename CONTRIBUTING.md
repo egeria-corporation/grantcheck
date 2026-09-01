@@ -41,7 +41,7 @@ uv run ruff format .
 Run the tool from your working copy without installing it:
 
 ```bash
-uv run grantcheck --ein 27-0125367
+uv run grantcheck --ein 27-1067272
 ```
 
 ## The testing rule: fixtures come from real data

@@ -20,7 +20,7 @@ not share a join key.
 You are building the tool that checks them together:
 
 ```bash
-uvx grantcheck --ein 27-0125367
+uvx grantcheck --ein 27-1067272
 ```
 
 One command, no account, no API key, no database, no 2-million-row download. A one-page readiness
@@ -172,7 +172,7 @@ class Check:
 @dataclass(frozen=True)
 class Report:
     schema_version: str   # '1.0'
-    ein: str              # formatted '27-0125367'
+    ein: str              # formatted '27-1067272'
     queried_at: datetime  # UTC, ISO 8601
     organization: Organization | None
     checks: list[Check]
@@ -433,8 +433,8 @@ including `.env`, `CHANGELOG.md`, and `.github/workflows/ci.yml` running lint an
 3.12, 3.13. `uvx --from . grantcheck --version` works.
 *Demo: the version prints.*
 
-**M1 — EIN handling and models.** `ein.py` and `models.py`. Normalization accepts `27-0125367`,
-`270125367`, `27 0125367`, and rejects everything else with a message that shows the expected
+**M1 — EIN handling and models.** `ein.py` and `models.py`. Normalization accepts `27-1067272`,
+`271067272`, `27 0125367`, and rejects everything else with a message that shows the expected
 format. Prefix extraction. `Report`, `Check`, `Vintage`, `Organization` dataclasses with JSON
 serialization and a round-trip test.
 *Demo: `pytest tests/test_ein.py` covers valid, invalid, whitespace, unicode, and empty input.*
@@ -454,7 +454,7 @@ network I/O.*
 
 **M4 — Checks, minus SAM.** All checks except the three SAM ones. **Write the four
 correctness-trap tests first**, then make them pass. Terminal renderer. Disclosure in the footer.
-*Demo: `grantcheck --ein 27-0125367` prints a real report with real vintages.*
+*Demo: `grantcheck --ein 27-1067272` prints a real report with real vintages.*
 
 **M5 — SAM.gov.** Matching with confidence, the bundled snapshot path, the live path behind
 `SAM_API_KEY`, `--uei`, and the low-confidence `unknown` path.
@@ -491,7 +491,7 @@ PyPI on a clean machine.
 Checkable, not aspirational. Every one is verifiable by running something.
 
 **Quickstart**
-- [ ] On a container with no cache, no `.env`, and no keys, `uvx grantcheck --ein 27-0125367`
+- [ ] On a container with no cache, no `.env`, and no keys, `uvx grantcheck --ein 27-1067272`
       returns a complete report in under 15 seconds and downloads under 10 MB.
 - [ ] A second run of the same command completes in under 1 second with no network access at all.
 - [ ] `uvx grantcheck --help` names every command and documents the exit codes.
@@ -549,7 +549,7 @@ aggregator.
 
 | EIN | Organization | What it exercises |
 |---|---|---|
-| `27-0125367` | Code for America Labs | Active 501(c)(3), full 990 filer, likely SAM-registered. The happy path and the README example. |
+| `27-1067272` | Code for America Labs | Active 501(c)(3), full 990 filer, likely SAM-registered. The happy path and the README example. |
 | `20-0049703` | Wikimedia Foundation | Large, well-known, name in SAM is likely to differ from the BMF legal name. Tests name matching. |
 | `53-0196605` | The American National Red Cross | Congressionally chartered. Tests an unusual organization type end to end. |
 | `36-3673599` | Feeding America | Large national with affiliates. Tests that a central organization is not confused with its network. |

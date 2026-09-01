@@ -28,6 +28,55 @@ inside ZIP archives, refreshed monthly.
 parse the landing page for the current links, compare against the pinned defaults, and fail loudly
 on a mismatch rather than silently fetching a stale mirror.
 
+### Verified against the real files, 2026-09-01
+
+The four datasets were downloaded and parsed end to end on 2026-09-01. Where this document
+previously described the formats from documentation rather than from the bytes, it was wrong in
+the ways below. These are now encoded in `src/grantcheck/ingest/teos.py` and its tests.
+
+| | delimiter | header | fields | rows |
+|---|---|---|---|---|
+| EO Business Master File (`eo1`–`eo4.csv`) | comma | **yes** | 28 | 1,957,340 |
+| Publication 78 | pipe | **none** | 6 | 1,412,318 |
+| Automatic Revocation | pipe | **none** | 12 | 1,246,171 |
+| Form 990-N e-Postcard | pipe | **none** | 26 | 1,543,373 |
+
+1. **The three pipe-delimited files have no header row at all**, and each opens with two blank
+   lines. The guidance below to "read the header, map names to indices" applies only to the BMF.
+   For the other three, parsing is positional and the field count is the only structural check.
+2. **The BMF uses RFC 4180 quoting**, which this document did not say. Twenty-nine rows in the
+   2026-08-10 vintage carry a comma inside a quoted field, for example
+   `"NORTH COUNTRY HOSPITAL & HEALTH CENTER,INC"`. It must be read with a real CSV parser.
+   `split(",")` shifts those rows into plausible-looking nonsense.
+3. **Embedded pipes are real.** Exactly five rows in the 2026-08-31 e-Postcard file carry a
+   literal pipe inside the website or officer field, e.g. `Home | Unity Foundation (...)`. There
+   is no quoting convention in that format, so they cannot be recovered and are quarantined.
+   Every one of them is committed as a fixture.
+4. **All four files decoded as clean UTF-8** in this vintage — no Latin-1 or cp1252 bytes were
+   found. Keep decoding defensively anyway, but the warning below is not currently observed.
+5. **The revocation list is 1,246,171 rows, not ~800,000**, and **181,259 of them carry a
+   reinstatement date** — roughly one in seven. Reading list membership as "currently revoked"
+   would wrongly report every one of those as ineligible.
+6. **`AFFILIATION`, not `GROUP`, distinguishes a subordinate from a central organization.** Both
+   carry the group exemption number. Measured across all 1.6M subsection-03 rows against the
+   2026-08-11 Publication 78 file:
+
+   | `AFFILIATION` | meaning | count | listed in Pub 78 |
+   |---|---|---|---|
+   | 9 | subordinate | 237,871 | **0.0%** |
+   | 7 | intermediate | 32 | **0.0%** |
+   | 6 | central organization | 1,844 | 99.4% |
+   | 8 | — | 716 | 99.6% |
+   | *(no group)* | independent | 1,394,326 | 99.7% |
+
+   So absence from Publication 78 is expected for `AFFILIATION` 7 and 9, and is a real signal for
+   everything else. Suppressing the check on `GROUP` alone would wrongly excuse ~2,560 central
+   organizations that genuinely should be listed.
+7. **The BMF header carries 28 columns**, including `ACTIVITY`, `ASSET_CD`, `INCOME_CD`, and
+   `ACCT_PD`, which the column table below omits.
+
+---
+
 ### Cross-cutting gotchas for all four files
 
 - **Delimiter is a pipe, and organization names contain pipes.** Rarely, but they do, along with
@@ -42,7 +91,7 @@ on a mismatch rather than silently fetching a stale mirror.
 - **EINs have no hyphen and are not zero-padded consistently.** Some files carry a 9-character
   string, some drop a leading zero. Normalize every EIN to a 9-digit zero-padded string on ingest
   and format for display only at the output boundary. Every EIN accepted from a user should be
-  normalized the same way, so `27-0125367`, `270125367`, and `27 0125367` are one key.
+  normalized the same way, so `27-1067272`, `271067272`, and `27 0125367` are one key.
 - **Fixed-width padding.** Fields are frequently space-padded to a fixed width inside the
   pipe-delimited row. Strip every field. A trailing space on a state code is a silent join failure.
 - **Header rows are present but not guaranteed stable.** Read the header, map names to indices,

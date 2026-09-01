@@ -1,0 +1,11 @@
+{
+  "source_url": "https://apps.irs.gov/pub/epostcard/data-download-epostcard.zip",
+  "source_file": "epostcard.zip",
+  "upstream_last_modified": "Mon, 31 Aug 2026 10:02:30 GMT",
+  "upstream_sha256": "11de1eb8f50eeb668a4d3b3311534184d9dc349d4ab9d872a32fd9662235ac08",
+  "retrieved_at": "2026-09-01T16:44:38.023132+00:00",
+  "extracted_at": "2026-09-01T16:51:08.171944+00:00",
+  "rows": 5,
+  "note": "EVERY row in the 2026-08-31 e-Postcard file whose field count is not 26, all five of them, caused by a literal pipe inside the website or officer field. There is no quoting convention in this format, so a naive split('|') shifts the row and produces a plausible-looking wrong answer. These must be quarantined and counted, never best-guessed. This fixture is the regression test for that.",
+  "fixture_sha256": "b96b399538af89ff83fb5776d0b0191d56358499daa7caea40fb8787e49a52cb"
+}
