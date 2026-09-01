@@ -475,3 +475,50 @@ class TestRepeatRevocation:
         assert len({r["ein"] for r in rows}) == 3
         for ein in ("001037180", "003754390", "010275502"):
             assert ein in repeat
+
+
+class TestUserAgentIsLoadBearing:
+    """The descriptive User-Agent is required, not politeness.
+
+    Cloudflare, which fronts the published index, returns 403 to the default
+    ``Python-urllib`` agent. This was found when the ingest workflow's own verification
+    step got a 403 fetching what it had just successfully uploaded. The client works
+    because it sets a descriptive agent; drop that header and every user gets 403.
+    """
+
+    def test_the_client_sends_a_descriptive_agent(self, published: Path, tmp_path: Path) -> None:
+        seen: list[str] = []
+
+        class Recording(httpx.BaseTransport):
+            def __init__(self, root: Path) -> None:
+                self.root = root
+
+            def handle_request(self, request: httpx.Request) -> httpx.Response:
+                seen.append(request.headers.get("user-agent", ""))
+                path = self.root / request.url.path.rsplit("/", 1)[-1]
+                if not path.exists():
+                    return httpx.Response(404, content=b"missing")
+                return httpx.Response(200, content=path.read_bytes())
+
+        from grantcheck.sources.index import USER_AGENT
+
+        client = IndexClient(base="https://index.test", cache=tmp_path / "cache")
+        client._client = httpx.Client(
+            transport=Recording(published),
+            base_url="https://index.test",
+            headers={"User-Agent": USER_AGENT},
+        )
+        client.lookup("271067272")
+
+        assert seen, "no requests were made"
+        for agent in seen:
+            assert "grantcheck" in agent
+            assert "python-urllib" not in agent.lower()
+
+    def test_the_agent_names_the_project_and_a_contact_url(self) -> None:
+        from grantcheck.sources.index import USER_AGENT
+
+        # A bare token tells an operator nothing about who to contact when traffic looks
+        # odd. Being identifiable is what keeps free public infrastructure usable.
+        assert "grantcheck" in USER_AGENT
+        assert "github.com/egeria-corporation" in USER_AGENT

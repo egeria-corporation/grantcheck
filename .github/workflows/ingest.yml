@@ -115,16 +115,23 @@ jobs:
       # Fetch what was actually published, over the public URL, and verify a real shard
       # against its declared checksum. Publishing without reading it back is how a broken
       # index sits there looking fine.
+      #
+      # The descriptive User-Agent is required, not decorative: Cloudflare returns 403 to
+      # the default Python-urllib agent. The client sets the same header for the same
+      # reason, so this verifies the path a real user takes rather than a privileged one.
       - name: Verify the published index is readable
         run: |
-          curl -fsS "$PUBLIC_BASE/manifest.json" -o /tmp/published.json
+          UA="grantcheck (+https://github.com/egeria-corporation/grantcheck)"
+          curl -fsS -A "$UA" "$PUBLIC_BASE/manifest.json" -o /tmp/published.json
           python - <<'PY'
           import hashlib, json, os, urllib.request
+          UA = "grantcheck (+https://github.com/egeria-corporation/grantcheck)"
           base = os.environ["PUBLIC_BASE"]
           m = json.load(open("/tmp/published.json"))
           shard = m["shards"][0]
           url = f"{base}/{m['vintage']}/{shard['file']}"
-          with urllib.request.urlopen(url, timeout=180) as r:
+          req = urllib.request.Request(url, headers={"User-Agent": UA})
+          with urllib.request.urlopen(req, timeout=180) as r:
               blob = r.read()
           got = hashlib.sha256(blob).hexdigest()
           if got != shard["sha256"]:
