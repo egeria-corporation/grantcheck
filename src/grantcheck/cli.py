@@ -38,8 +38,15 @@ These exist so a whole client roster can be checked from a script.
 )
 @click.version_option(__version__, "-V", "--version", prog_name="grantcheck")
 @click.option("--ein", help="The EIN to check, with or without the hyphen.")
+@click.option(
+    "--uei",
+    help=(
+        "Pin the SAM.gov registration by Unique Entity ID, skipping name matching. "
+        "Use this whenever the inferred match is wrong."
+    ),
+)
 @click.pass_context
-def main(ctx: click.Context, ein: str | None) -> None:
+def main(ctx: click.Context, ein: str | None, uei: str | None) -> None:
     """Check whether an organization is mechanically ready to apply for federal grants.
 
     Reports observable facts from public IRS data, each with its source and publication
@@ -50,14 +57,14 @@ def main(ctx: click.Context, ein: str | None) -> None:
     if ein is None:
         click.echo(ctx.get_help())
         return
-    ctx.exit(_report(ein))
+    ctx.exit(_report(ein, uei=uei))
 
 
-def _report(ein: str) -> int:
+def _report(ein: str, *, uei: str | None = None) -> int:
     """Build and print one report. Returns the process exit code."""
     client = IndexClient()
     try:
-        report = build_report(ein, client=client)
+        report = build_report(ein, client=client, uei=uei)
     except InvalidEIN as exc:
         click.echo(f"Error: {exc}", err=True)
         return EXIT_ERROR

@@ -5,6 +5,11 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 ## [Unreleased]
 
 ### Added
+- M5 SAM.gov: `ingest/matching.py` infers the EIN-to-UEI link by normalized legal name and
+  state with a published confidence score and tier, and the three federal-registration
+  checks (`sam_registration`, `sam_expiration`, `uei`). `--uei` pins the match and skips
+  inference. Below the confidence floor, and when the index carries no SAM.gov data at all,
+  the checks report `unknown` rather than a finding.
 - M4 checks and terminal rendering: the seven non-SAM checks (exempt status, Publication 78
   deductibility, automatic revocation, organization type, most recent filing, filing
   recency, NTEE), `report.build_report()` as the single entry point both adapters call, the

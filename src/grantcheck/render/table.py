@@ -193,6 +193,14 @@ def _verdict_summary(report: Report) -> str:
     if attention:
         n = len(attention)
         return f"{n} item{'s' if n != 1 else ''} need{'' if n != 1 else 's'} attention"
+
+    # An unchecked thing must not block — but a verdict of READY TO APPLY printed over three
+    # unknowns is its own kind of dishonest. The readiness value stays exactly as specified;
+    # the summary line says what was not looked at.
+    unchecked = [c for c in report.checks if c.status == "unknown"]
+    if unchecked:
+        n = len(unchecked)
+        return f"{n} item{'s' if n != 1 else ''} could not be checked"
     return ""
 
 

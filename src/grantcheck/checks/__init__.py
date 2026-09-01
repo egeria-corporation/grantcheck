@@ -49,6 +49,9 @@ def _load_registry() -> list[tuple[str, CheckFn]]:
         ntee,
         organization_type,
         pub78,
+        sam_expiration,
+        sam_registration,
+        uei,
     )
 
     return [
@@ -59,6 +62,9 @@ def _load_registry() -> list[tuple[str, CheckFn]]:
         ("most_recent_filing", most_recent_filing.check),
         ("filing_recency", filing_recency.check),
         ("ntee", ntee.check),
+        ("sam_registration", sam_registration.check),
+        ("sam_expiration", sam_expiration.check),
+        ("uei", uei.check),
     ]
 
 

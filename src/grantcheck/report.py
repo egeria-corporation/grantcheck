@@ -61,6 +61,7 @@ def build_report(
     client: IndexClient | None = None,
     today: date | None = None,
     now: datetime | None = None,
+    uei: str | None = None,
 ) -> Report:
     """Produce the complete report for one EIN.
 
@@ -75,6 +76,19 @@ def build_report(
     manifest = client.manifest()
     row = client.lookup(normalized, manifest=manifest)
 
+    if row is not None and uei:
+        # A user-supplied UEI pins the SAM.gov match and skips inference entirely. This is
+        # the escape hatch for every mismatch, and it has to override whatever the index
+        # inferred rather than competing with it.
+        row = dict(row)
+        row["uei"] = uei.strip().upper()
+        row["sam_match_confidence"] = 1.0
+        row["sam_match_method"] = "pinned"
+        row["sam_match_note"] = (
+            f"SAM.gov entity pinned by the Unique Entity ID you supplied "
+            f"({row['uei']}), so no name matching was performed."
+        )
+
     ctx = CheckContext(
         ein=normalized,
         row=row,
@@ -83,6 +97,9 @@ def build_report(
     )
 
     notes: list[str] = []
+    match_note = ctx.value("sam_match_note")
+    if match_note:
+        notes.append(str(match_note))
     if manifest.from_cache:
         notes.append(
             "The dataset index could not be refreshed, so these vintages are from the "
