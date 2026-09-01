@@ -190,9 +190,31 @@ def render(
             )
             out.extend(_render_check(check, glyphs, paint, detail=needs_detail))
 
+    out.extend(_opportunities(report, paint))
     out.extend(_footer(report, use_unicode=use_unicode))
     rendered = "\n".join(out) + "\n"
     return rendered if use_unicode else asciify(rendered)
+
+
+def _opportunities(report: Report, paint) -> list[str]:
+    """Render matched opportunities, always marked as live rather than public-source.
+
+    Absent enrichment produces nothing at all — not an empty heading, not a hint that the
+    section could exist. A user without a key must not be able to tell this is here.
+    """
+    if not report.opportunities:
+        return []
+
+    from grantcheck.sources.opengrants import MARKER
+
+    out = ["", f"{INDENT}{paint('OPEN OPPORTUNITIES', BOLD)}  {MARKER}"]
+    for opp in report.opportunities:
+        title = opp.title if len(opp.title) <= 52 else opp.title[:49] + "..."
+        deadline = f"closes {opp.deadline}" if opp.deadline else ""
+        out.append(f"{INDENT}   {title:<52} {deadline}".rstrip())
+        if opp.funder:
+            out.append(f"{INDENT}   {opp.funder}")
+    return out
 
 
 def _subtitle(report: Report) -> str:

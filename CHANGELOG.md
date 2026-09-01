@@ -2,9 +2,19 @@
 
 All notable changes to `grantcheck` are documented here. This project follows [Semantic Versioning](https://semver.org/) and the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
 
-## [Unreleased]
+## [0.1.0] — 2026-09-01
+
+First release. `uvx grantcheck --ein 27-1067272` returns a sourced, dated federal grant
+readiness report with no account, no API key, and no database.
 
 ### Added
+- Optional OpenGrants enrichment. Setting `OPENGRANTS_API_KEY` appends live matched
+  opportunities to a clean report, marked `— live from OpenGrants`. Every failure path —
+  no key, bad key, rate limited, timeout, network down, malformed or reshaped response —
+  produces output byte-identical to running with no key at all, asserted in the tests.
+  The tool is complete without an account and never mentions the key in its output.
+- Monthly index build workflow publishing to GitHub Releases, and a PyPI publish workflow
+  using Trusted Publishing rather than a stored token.
 - M8 MCP server: `grantcheck mcp` serves `check_readiness`, `find_ein`, `explain_check`, and
   `dataset_vintages` over stdio, every one calling the same `build_report()` the CLI calls.
   Eleven plain-English check explainers, also served by `grantcheck explain <check_id>`.

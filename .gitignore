@@ -24,3 +24,5 @@ data/interim/
 # Fixtures under tests/fixtures/ are small real slices and ARE committed.
 data/raw/
 *.zip
+
+dist/

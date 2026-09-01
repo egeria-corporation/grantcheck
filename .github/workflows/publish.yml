@@ -1,0 +1,78 @@
+name: Publish to PyPI
+
+# Runs on a version tag. Uses PyPI Trusted Publishing, so there is no token to store,
+# rotate, or leak — PyPI verifies the workflow's OIDC identity instead.
+#
+# One-time setup on PyPI, at https://pypi.org/manage/account/publishing/:
+#   PyPI project name  grantcheck
+#   Owner              egeria-corporation
+#   Repository         grantcheck
+#   Workflow           publish.yml
+#   Environment        pypi
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    # Never publish something that has not just passed on every supported version.
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv python install ${{ matrix.python-version }}
+      - run: uv sync --all-extras --dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest -q
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv build
+
+      - name: Check the built distribution
+        run: |
+          uvx twine check dist/*
+          # The schema and the explainers are part of the public contract and must ship in
+          # the wheel, not only in the repository.
+          python - <<'PY'
+          import glob, sys, zipfile
+          wheel = glob.glob("dist/*.whl")[0]
+          names = zipfile.ZipFile(wheel).namelist()
+          required = ["grantcheck/data/report-schema-1.0.json"]
+          explainers = [n for n in names if n.startswith("grantcheck/explanations/") and n.endswith(".md")]
+          missing = [r for r in required if r not in names]
+          if missing:
+              sys.exit(f"wheel is missing {missing}")
+          if len(explainers) < 11:
+              sys.exit(f"wheel has {len(explainers)} explainers, expected 11")
+          print(f"{wheel}: schema present, {len(explainers)} explainers")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # for Trusted Publishing; no stored secret
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

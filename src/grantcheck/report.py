@@ -20,6 +20,7 @@ from grantcheck.models import (
     blocking_ids,
     derive_readiness,
 )
+from grantcheck.sources import opengrants
 from grantcheck.sources.index import IndexClient, Manifest
 
 
@@ -62,6 +63,7 @@ def build_report(
     today: date | None = None,
     now: datetime | None = None,
     uei: str | None = None,
+    enrich: bool = True,
 ) -> Report:
     """Produce the complete report for one EIN.
 
@@ -123,14 +125,30 @@ def build_report(
         )
 
     checks = run_all(ctx)
+    readiness = derive_readiness(checks, found=True)
+
+    # Enrichment runs only on a clean report, which is the moment of maximum intent: the
+    # tool has just said nothing mechanical is stopping this organization from applying.
+    # It is additive and optional — every failure returns None and the report below is
+    # byte-identical to one built with no key at all.
+    opportunities = None
+    if readiness == "ready" and enrich:
+        enrichment = opengrants.match_opportunities(
+            ein=normalized,
+            state=row.get("state"),
+            ntee_code=row.get("ntee_cd"),
+        )
+        if enrichment is not None:
+            opportunities = enrichment.opportunities
 
     return Report(
         ein=format_ein(normalized),
         queried_at=now or datetime.now(UTC),
-        readiness=derive_readiness(checks, found=True),
+        readiness=readiness,
         organization=organization_from_row(row, normalized),
         checks=checks,
         blocking_check_ids=blocking_ids(checks),
+        opportunities=opportunities,
         vintages=sorted(
             {c.vintage for c in checks if c.vintage is not None},
             key=lambda v: v.dataset,

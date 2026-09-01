@@ -1,6 +1,6 @@
 [project]
 name = "grantcheck"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Federal grant readiness check by EIN — free, open, built on IRS and SAM.gov public data"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -56,11 +56,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/grantcheck"]
 
-# The JSON Schema is part of the public contract, so it ships with the package rather than
-# living only in the repository. The hosted site validates against the same file.
-[tool.hatch.build.targets.wheel.force-include]
-"src/grantcheck/data/report-schema-1.0.json" = "grantcheck/data/report-schema-1.0.json"
-"src/grantcheck/explanations" = "grantcheck/explanations"
+# The JSON Schema and the explainers are part of the public contract and must ship in the
+# wheel, not only in the repository. They live inside the package directory, so hatchling
+# includes them with the package — a force-include here would add them a second time and
+# fail the build. The publish workflow asserts they are present in the built wheel.
 
 [dependency-groups]
 dev = [

@@ -1,0 +1,75 @@
+name: Monthly index build
+
+# The IRS refreshes these datasets monthly. This builds the sharded index and publishes it
+# as a GitHub Release, which is what `uvx grantcheck` downloads from.
+#
+# GitHub Releases is the publication target rather than Cloudflare R2 for now: it is free,
+# needs no credentials beyond the workflow's own token, and comfortably serves ~145 MB
+# across 234 files. R2 becomes worth the setup when download volume makes egress matter,
+# and switching is one constant in sources/index.py.
+on:
+  schedule:
+    # Second Tuesday, after the IRS monthly posting has settled.
+    - cron: "0 9 8-14 * 2"
+  workflow_dispatch:
+    inputs:
+      vintage:
+        description: "Vintage label, YYYY-MM. Defaults to the current month."
+        required: false
+
+permissions:
+  contents: write # to create the release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install
+        run: uv sync --extra ingest
+
+      - name: Determine vintage
+        id: vintage
+        run: |
+          VINTAGE="${{ github.event.inputs.vintage }}"
+          if [ -z "$VINTAGE" ]; then VINTAGE=$(date -u +%Y-%m); fi
+          echo "vintage=$VINTAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Build the index
+        run: uv run python -m grantcheck.ingest.run --out build --vintage "${{ steps.vintage.outputs.vintage }}"
+
+      - name: Verify the manifest is the last thing written
+        run: |
+          test -f "build/${{ steps.vintage.outputs.vintage }}/manifest.json"
+          python -c "
+          import json, pathlib, sys
+          d = pathlib.Path('build/${{ steps.vintage.outputs.vintage }}')
+          m = json.loads((d / 'manifest.json').read_text())
+          missing = [s['file'] for s in m['shards'] if not (d / s['file']).exists()]
+          if missing:
+              sys.exit(f'manifest references {len(missing)} missing shards')
+          print(f\"{len(m['shards'])} shards verified against the manifest\")
+          "
+
+      # The release is created only after the manifest verifies, so a partial build never
+      # becomes the thing clients resolve `latest` to.
+      - name: Publish as a release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VINTAGE="${{ steps.vintage.outputs.vintage }}"
+          gh release create "index-$VINTAGE" \
+            --title "Index $VINTAGE" \
+            --notes "Sharded index built from the IRS bulk datasets. See manifest.json for the dataset vintages this was built from." \
+            build/$VINTAGE/* \
+            || gh release upload "index-$VINTAGE" build/$VINTAGE/* --clobber

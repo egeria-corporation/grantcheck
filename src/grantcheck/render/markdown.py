@@ -111,8 +111,30 @@ def render(report: Report) -> str:
             out.append(f"**{_escape(check.label)}.** {check.detail}")
             out.append("")
 
+    out.extend(_opportunities(report))
     out.extend(_footer(report))
     return "\n".join(out) + "\n"
+
+
+def _opportunities(report: Report) -> list[str]:
+    """Matched opportunities, marked as live. Absent enrichment renders nothing."""
+    if not report.opportunities:
+        return []
+
+    from grantcheck.sources.opengrants import MARKER
+
+    out = [
+        f"### Open opportunities {MARKER}",
+        "",
+        "| Opportunity | Funder | Closes |",
+        "|---|---|---|",
+    ]
+    for opp in report.opportunities:
+        closes = opp.deadline.isoformat() if opp.deadline else ""
+        title = f"[{_escape(opp.title)}]({opp.url})" if opp.url else _escape(opp.title)
+        out.append(f"| {title} | {_escape(opp.funder)} | {closes} |")
+    out.append("")
+    return out
 
 
 def _footer(report: Report) -> list[str]:

@@ -123,6 +123,13 @@ $ grantcheck --ein 94-2614101
                             deadlines. See IRS Rev. Proc. 2014-11.
 ```
 
+> **Status, v0.1.0.** The tax exemption and filing health checks are live and run against
+> the real IRS datasets. The three SAM.gov checks report "not checked" until the SAM.gov
+> entity snapshot is added to the published index, and the single audit screen reports the
+> threshold that applies to your fiscal year but cannot yet tell you what you expended —
+> that figure comes from the Form 990 e-file XML, which is not in the index yet. Every
+> check says which of those it is rather than guessing.
+>
 > The two blocks above are illustrative. They show the shape and tone of the output, not values
 > fetched live for this document. Run the command yourself for current figures.
 
