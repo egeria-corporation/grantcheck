@@ -173,3 +173,20 @@ The check list is deliberately short and it is deliberately limited to hard, pub
 machine-checkable disqualifications. But if there is a category of disqualification that meets
 those three tests and is missing, that is the highest-value issue anyone can open on this repo.
 Say what it is, where the public data lives, and describe an organization that has the problem.
+
+## A note on Python versions and this project's CI
+
+`requires-python` is `>=3.11` and CI runs the full test suite on 3.11, 3.12, and 3.13.
+**CI is the version gate, not your laptop.** A standard-library method can gain a keyword
+argument in a later release and your local run will accept it happily — `Path.read_text`
+grew its `newline` parameter in 3.13, which passed locally on 3.14 and failed on 3.11 and
+3.12 in CI.
+
+If you develop on **Windows on ARM**, note that `uv python install 3.11` currently fails
+there: uv's index carries `windows-x86_64` builds only, with no `windows-arm64` CPython,
+so the matrix cannot be reproduced locally at all. Push and read the CI result; it takes
+about two minutes.
+
+Before reaching for a standard-library API you are not sure about, check "Changed in
+version" in the CPython docs against 3.11.
+

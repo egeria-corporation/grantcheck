@@ -31,11 +31,15 @@ FIXTURES = Path(__file__).parent / "fixtures" / "teos"
 def load(name: str) -> str:
     """Read a fixture preserving its real line endings.
 
-    ``read_text()`` without ``newline=""`` applies universal-newline translation, turning
-    the file's real CRLF into LF. Every assertion about the actual bytes would then be
-    testing a translated copy rather than what the IRS shipped.
+    Text-mode reads apply universal-newline translation, turning the file's real CRLF into
+    LF, so every assertion about the actual bytes would be testing a translated copy rather
+    than what the IRS shipped.
+
+    Decoding bytes directly avoids that on every supported version. ``read_text`` grew a
+    ``newline`` parameter only in Python 3.13, so using it would pass locally and fail on
+    3.11 and 3.12.
     """
-    return (FIXTURES / name).read_text(encoding="utf-8", newline="")
+    return (FIXTURES / name).read_bytes().decode("utf-8")
 
 
 def sidecar(name: str) -> dict:
