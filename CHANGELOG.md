@@ -5,6 +5,10 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 ## [Unreleased]
 
 ### Added
+- M3 index build and client: `ingest/build.py` shards the merged datasets by EIN prefix
+  into compressed SQLite with a checksummed manifest, and `sources/index.py` fetches,
+  verifies, caches, and queries them. A real build produces 234 shards totalling 145 MB,
+  median shard 0.66 MB, largest 4.83 MB — none over the 8 MB target.
 - M2 TEOS parsers: `ingest/teos.py` covering the EO Business Master File, Publication 78,
   the Automatic Revocation List, and the Form 990-N e-Postcard file, with
   quarantine-and-count for structurally invalid rows. Fixtures are real committed slices
@@ -20,6 +24,17 @@ All notable changes to `grantcheck` are documented here. This project follows [S
 - Repository scaffolding: documentation, research dossier, and build prompts.
 
 ### Fixed
+- Organizations revoked more than once were reported using whichever row came last in the
+  file. 19,136 EINs carry multiple rows on the Automatic Revocation List — revoked,
+  reinstated, then revoked again — and the merge now selects by latest revocation date.
+  The previous behaviour reported three verified currently-revoked organizations as
+  reinstated and in good standing.
+- A well-formed EIN whose two-digit prefix has no shard now reports not found rather than
+  raising. Ten prefixes (07, 09, 17, 18, 19, 28, 29, 49, 79, 89) have no shard because the
+  IRS has never issued them, and those must exit 4, not 1.
+- A malformed month in a BMF date field nulled the whole organization row. One real row
+  carries `RULING=190900`. Field-level problems now null the field and are counted
+  separately from structural quarantine.
 - The EIN used throughout the documentation for Code for America Labs was `27-0125367`,
   which is absent from the Business Master File entirely. The real EIN is `27-1067272`.
   The README example's NTEE code and ruling date were also wrong (`W20` and `2010-06`).

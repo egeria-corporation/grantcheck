@@ -1,0 +1,11 @@
+{
+  "source_url": "https://apps.irs.gov/pub/epostcard/data-download-revocation.zip",
+  "source_file": "revocation.zip",
+  "upstream_last_modified": "Tue, 11 Aug 2026 11:32:48 GMT",
+  "upstream_sha256": "97e36acc2df351ad2214176ef3bb0f8d4499115c54e5f008802c0468c1b9fcb2",
+  "retrieved_at": "2026-09-01T16:44:32.152626+00:00",
+  "extracted_at": "2026-09-01T17:22:09.879910+00:00",
+  "rows": 6,
+  "note": "Real rows for three organizations that appear TWICE on the Automatic Revocation List: revoked, reinstated, then revoked again. 19,136 EINs in the 2026-08-11 vintage carry more than one row. Current status must come from the row with the latest revocation date, never from file order. The rows here are stored in REVERSE chronological order on purpose, so a merge that takes last-row-wins by file position fails this fixture instead of passing by luck.",
+  "fixture_sha256": "ff170321398adcffd933c953b2fc209e782faa4ff670a932201beefa4274f4fc"
+}

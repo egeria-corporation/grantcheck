@@ -98,6 +98,11 @@ class ParseResult:
     rows: list[dict] = field(default_factory=list)
     quarantined: list[tuple[int, str, str]] = field(default_factory=list)  # (line_no, reason, raw)
 
+    # A malformed value in an otherwise well-formed row. The field is nulled and the row is
+    # kept, because discarding a whole organization over one cosmetic field loses more than
+    # it protects. Counted separately from quarantine so a jump is still visible.
+    field_warnings: list[tuple[int, str, str]] = field(default_factory=list)  # (line, field, why)
+
     @property
     def ok(self) -> int:
         return len(self.rows)
@@ -105,6 +110,10 @@ class ParseResult:
     @property
     def rejected(self) -> int:
         return len(self.quarantined)
+
+    @property
+    def warned(self) -> int:
+        return len(self.field_warnings)
 
     def quarantine_rate(self) -> float:
         total = self.ok + self.rejected
@@ -321,6 +330,19 @@ def parse_bmf(text: str) -> ParseResult:
         def cell(name: str, r: list[str] = row) -> str:
             return r[index[name]].strip()
 
+        def month_field(name: str, line: int = line_no, cell=cell) -> str | None:
+            """Parse a YYYYMM field, nulling it rather than losing the organization.
+
+            The real file contains rows like ``RULING=190900`` — a year with month ``00``.
+            Quarantining the whole row would drop a live organization with a perfectly good
+            EIN, name, subsection, and status over a field used only for display.
+            """
+            try:
+                return parse_yyyymm(cell(name))
+            except ValueError as exc:
+                result.field_warnings.append((line, name, str(exc)))
+                return None
+
         try:
             result.rows.append(
                 {
@@ -339,7 +361,7 @@ def parse_bmf(text: str) -> ParseResult:
                     "subsection": cell("SUBSECTION"),
                     "affiliation": cell("AFFILIATION"),
                     "classification": cell("CLASSIFICATION"),
-                    "ruling": parse_yyyymm(cell("RULING")),
+                    "ruling": month_field("RULING"),
                     "deductibility": cell("DEDUCTIBILITY"),
                     "foundation": cell("FOUNDATION"),
                     "organization": cell("ORGANIZATION"),
@@ -347,7 +369,7 @@ def parse_bmf(text: str) -> ParseResult:
                     # NOT a filing date. It is the period of the most recent processed
                     # return, at month precision, lagging actual filing by weeks to over a
                     # year. Only ever a labelled fallback for recency.
-                    "tax_period": parse_yyyymm(cell("TAX_PERIOD")),
+                    "tax_period": month_field("TAX_PERIOD"),
                     "filing_req_cd": cell("FILING_REQ_CD"),
                     "pf_filing_req_cd": cell("PF_FILING_REQ_CD"),
                     "asset_amt": cell("ASSET_AMT"),
