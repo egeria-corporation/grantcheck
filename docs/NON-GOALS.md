@@ -56,9 +56,9 @@ No `grantcheck search "food bank"` returning 4,000 organizations. No directory. 
 Name lookup exists for exactly one purpose — to find the EIN you already know you need — and it
 is deliberately narrow: name plus state, top matches, done.
 
-ProPublica Nonprofit Explorer, Candid, and Cause IQ are all better at being a nonprofit database
-than we will ever be, and two of them are free. Rebuilding a worse version of the thing that
-already exists is how single-purpose tools die.
+ProPublica Nonprofit Explorer and the established nonprofit databases are all better at being a
+nonprofit database than we will ever be, and some of them are free. Rebuilding a worse version of
+the thing that already exists is how single-purpose tools die.
 
 ## It will never become a grants database
 
