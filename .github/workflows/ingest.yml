@@ -1,12 +1,15 @@
 name: Monthly index build
 
 # The IRS refreshes these datasets monthly. This builds the sharded index and publishes it
-# as a GitHub Release, which is what `uvx grantcheck` downloads from.
+# to Cloudflare R2, behind index.check.opengrants.io, which is what `uvx grantcheck`
+# downloads from.
 #
-# GitHub Releases is the publication target rather than Cloudflare R2 for now: it is free,
-# needs no credentials beyond the workflow's own token, and comfortably serves ~145 MB
-# across 234 files. R2 becomes worth the setup when download volume makes egress matter,
-# and switching is one constant in sources/index.py.
+# R2 rather than a metered host because every user download is egress and R2's egress is
+# free. On a metered platform the program working as designed becomes a bill, which is how
+# a useful tool gets quietly throttled the moment it starts being used.
+#
+# A GitHub Release is published from the same build as the documented mirror, so there is
+# always a second way to get the data if R2 is unreachable.
 on:
   schedule:
     # Second Tuesday, after the IRS monthly posting has settled.
@@ -18,7 +21,12 @@ on:
         required: false
 
 permissions:
-  contents: write # to create the release
+  contents: write # to create the mirror release
+
+env:
+  R2_ENDPOINT: https://a5a2b776dd851a4e605683ef858e50de.r2.cloudflarestorage.com
+  R2_BUCKET: grantcheck-index
+  PUBLIC_BASE: https://index.check.opengrants.io
 
 jobs:
   build:
@@ -48,28 +56,89 @@ jobs:
       - name: Build the index
         run: uv run python -m grantcheck.ingest.run --out build --vintage "${{ steps.vintage.outputs.vintage }}"
 
-      - name: Verify the manifest is the last thing written
+      - name: Verify every shard the manifest references exists
         run: |
-          test -f "build/${{ steps.vintage.outputs.vintage }}/manifest.json"
-          python -c "
-          import json, pathlib, sys
-          d = pathlib.Path('build/${{ steps.vintage.outputs.vintage }}')
-          m = json.loads((d / 'manifest.json').read_text())
-          missing = [s['file'] for s in m['shards'] if not (d / s['file']).exists()]
+          python - <<'PY'
+          import json, os, pathlib, sys
+          d = pathlib.Path("build") / os.environ["VINTAGE"]
+          m = json.loads((d / "manifest.json").read_text())
+          missing = [s["file"] for s in m["shards"] if not (d / s["file"]).exists()]
           if missing:
-              sys.exit(f'manifest references {len(missing)} missing shards')
-          print(f\"{len(m['shards'])} shards verified against the manifest\")
-          "
+              sys.exit(f"manifest references {len(missing)} missing shards")
+          print(f"{len(m['shards'])} shards verified against the manifest")
+          PY
+        env:
+          VINTAGE: ${{ steps.vintage.outputs.vintage }}
 
-      # The release is created only after the manifest verifies, so a partial build never
-      # becomes the thing clients resolve `latest` to.
-      - name: Publish as a release
+      # Shards first, manifest last. The manifest is the commit point: until it changes,
+      # clients keep resolving the previous vintage consistently, so an upload that fails
+      # halfway cannot leave anyone reading a half-published index.
+      #
+      # Shards are immutable — a given vintage's bytes never change — so they cache
+      # forever. Only the manifest needs re-reading.
+      - name: Upload shards to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          # R2 does not implement the newer default checksum behaviour of the AWS CLI.
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          VINTAGE: ${{ steps.vintage.outputs.vintage }}
+        run: |
+          aws s3 sync "build/$VINTAGE/" "s3://$R2_BUCKET/$VINTAGE/" \
+            --endpoint-url "$R2_ENDPOINT" \
+            --exclude "manifest.json" \
+            --content-type "application/zstd" \
+            --cache-control "public, max-age=31536000, immutable" \
+            --no-progress
+
+      # The root manifest.json is the "latest" pointer clients fetch. Short cache, so a new
+      # vintage is picked up promptly without hammering the bucket.
+      - name: Publish the manifest — the commit point
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          VINTAGE: ${{ steps.vintage.outputs.vintage }}
+        run: |
+          for KEY in "$VINTAGE/manifest.json" "manifest.json"; do
+            aws s3 cp "build/$VINTAGE/manifest.json" "s3://$R2_BUCKET/$KEY" \
+              --endpoint-url "$R2_ENDPOINT" \
+              --content-type "application/json" \
+              --cache-control "public, max-age=300" \
+              --no-progress
+          done
+
+      # Fetch what was actually published, over the public URL, and verify a real shard
+      # against its declared checksum. Publishing without reading it back is how a broken
+      # index sits there looking fine.
+      - name: Verify the published index is readable
+        run: |
+          curl -fsS "$PUBLIC_BASE/manifest.json" -o /tmp/published.json
+          python - <<'PY'
+          import hashlib, json, os, urllib.request
+          base = os.environ["PUBLIC_BASE"]
+          m = json.load(open("/tmp/published.json"))
+          shard = m["shards"][0]
+          url = f"{base}/{m['vintage']}/{shard['file']}"
+          with urllib.request.urlopen(url, timeout=180) as r:
+              blob = r.read()
+          got = hashlib.sha256(blob).hexdigest()
+          if got != shard["sha256"]:
+              raise SystemExit(f"checksum mismatch for {shard['file']}")
+          print(f"verified {url} ({len(blob):,} bytes, checksum matches)")
+          PY
+
+      - name: Publish the mirror release
         env:
           GH_TOKEN: ${{ github.token }}
+          VINTAGE: ${{ steps.vintage.outputs.vintage }}
         run: |
-          VINTAGE="${{ steps.vintage.outputs.vintage }}"
           gh release create "index-$VINTAGE" \
             --title "Index $VINTAGE" \
-            --notes "Sharded index built from the IRS bulk datasets. See manifest.json for the dataset vintages this was built from." \
+            --notes "Sharded index built from the IRS bulk datasets. Primary distribution is $PUBLIC_BASE; this release is the mirror. See manifest.json for the dataset vintages it was built from." \
             build/$VINTAGE/* \
             || gh release upload "index-$VINTAGE" build/$VINTAGE/* --clobber

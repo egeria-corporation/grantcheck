@@ -32,7 +32,20 @@ import httpx
 import platformdirs
 import zstandard
 
-DEFAULT_BASE_URL = "https://github.com/egeria-corporation/grantcheck/releases/latest/download"
+# Cloudflare R2, behind a custom domain on our own zone.
+#
+# R2 rather than a metered host because every user download is egress, and R2's egress is
+# free. On a metered platform the program working as designed becomes a bill, which is the
+# failure mode where a tool gets quietly throttled the moment it starts being useful.
+#
+# The custom domain rather than the r2.dev subdomain because r2.dev is rate-limited and
+# Cloudflare says not to use it in production — and because this URL is then ours: if the
+# storage ever moves, the URL does not.
+DEFAULT_BASE_URL = "https://index.check.opengrants.io"
+
+# Published to a GitHub Release from the same build, as the documented fallback. Set
+# GRANTCHECK_INDEX_BASE_URL to this if R2 is ever unreachable.
+MIRROR_BASE_URL = "https://github.com/egeria-corporation/grantcheck/releases/latest/download"
 
 # The manifest is small and changes monthly. Twelve hours keeps a long-running session from
 # re-fetching it while still noticing a new vintage within a day.
@@ -263,14 +276,28 @@ class IndexClient:
         if local.exists():
             return local
 
-        url = f"{self.base}/{shard.file}"
-        try:
-            blob = self._get(url)
-        except httpx.HTTPError as exc:
+        # Two published layouts, handled without configuration:
+        #   R2 (primary)  {base}/{vintage}/shard-NN.sqlite.zst   — the documented layout
+        #   Release mirror {base}/shard-NN.sqlite.zst            — flat; GitHub release
+        #                                                          asset names cannot
+        #                                                          contain a slash
+        candidates = [
+            f"{self.base}/{manifest.vintage}/{shard.file}",
+            f"{self.base}/{shard.file}",
+        ]
+        blob = None
+        last_error: Exception | None = None
+        for url in candidates:
+            try:
+                blob = self._get(url)
+                break
+            except httpx.HTTPError as exc:
+                last_error = exc
+        if blob is None:
             raise IndexUnavailable(
                 f"Could not download the data file for EIN prefix {shard.prefix} "
-                f"({exc}). Check your connection and try again."
-            ) from exc
+                f"({last_error}). Check your connection and try again."
+            ) from last_error
 
         digest = hashlib.sha256(blob).hexdigest()
         if digest != shard.sha256:
