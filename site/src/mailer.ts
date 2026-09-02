@@ -36,13 +36,26 @@ export function resendMailer(apiKey: string, from: string): Mailer {
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
+            Accept: "application/json",
+            // Cloudflare fronts api.resend.com and will answer a request it dislikes with
+            // its own 403 ("error code: 1010") that never reaches Resend — and which looks
+            // exactly like a revoked key. This project has now been bitten by that twice, on
+            // the index CDN and while verifying this very key. A descriptive agent is
+            // cheap insurance, not decoration.
+            "User-Agent": "grantcheck (+https://github.com/egeria-corporation/grantcheck)",
           },
           body: JSON.stringify({ from, to: [to], subject, text }),
         });
+
         if (!response.ok) {
-          // Deliberately not logging the body: a provider error can echo the address back,
-          // and this log is not the place for it.
-          console.error(`mail send failed: ${response.status}`);
+          // With Worker invocation logs switched off for privacy, this line is the only
+          // signal that mail has stopped working. It has to be diagnosable.
+          //
+          // Resend answers errors as {statusCode, name, message}; `name` is a category
+          // ("validation_error", "missing_required_field"), never a recipient. That is what
+          // gets logged. The raw body never is: a provider error can echo the address back,
+          // and an address is precisely what must not end up in a log.
+          console.error(`mail send failed: HTTP ${response.status} ${await errorKind(response)}`);
           return false;
         }
         return true;
@@ -52,6 +65,24 @@ export function resendMailer(apiKey: string, from: string): Mailer {
       }
     },
   };
+}
+
+/** A safe, address-free label for why a send failed. */
+async function errorKind(response: Response): Promise<string> {
+  // A Cloudflare interception is HTML, not JSON, and means the request never reached the
+  // provider. Distinguishing it matters: the fix is a header, not a new API key.
+  const contentType = response.headers.get("Content-Type") ?? "";
+  if (!contentType.includes("json")) {
+    return response.status === 403
+      ? "(blocked upstream, not by Resend — check the request headers)"
+      : "(non-JSON response)";
+  }
+  try {
+    const body = (await response.json()) as { name?: string };
+    return body.name ? `(${body.name})` : "(no error name)";
+  } catch {
+    return "(unparseable JSON)";
+  }
 }
 
 export function mailerFor(env: { RESEND_API_KEY?: string; MAIL_FROM?: string }): Mailer {
