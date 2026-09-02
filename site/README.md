@@ -112,6 +112,15 @@ verdicts actually changed — a month in which nothing moves sends nothing at al
 
 ## Before real accounts exist
 
-Publish a privacy policy. The sign-in page makes specific promises — no tracking, no sharing,
-immediate and complete deletion — and those need somewhere to live that is not a bullet list
-on a form.
+The privacy policy is written and served at `/privacy`, but **two placeholders in
+`src/views/privacy.tsx` must be filled first** — they are together in `PRIVACY_CONTACT`:
+
+- `email` — must be a real, monitored mailbox. It is where access, correction and deletion
+  requests arrive, and several state privacy laws require a working channel.
+- `postal` — the CCPA requires a postal address for a business serving California residents,
+  which this one will.
+
+The policy makes specific negative claims — no analytics, one cookie, two service providers,
+no sale or sharing, no request logs. Each is true of the code today and each is checkable.
+**Re-read it against the code before adding any dependency that talks to a third party**, and
+before turning invocation logging back on in `wrangler.jsonc`.
