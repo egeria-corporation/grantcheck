@@ -8,8 +8,8 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { issueLoginToken, redeemLoginToken } from "../src/auth";
-import { alertEmail, runMonitoring } from "../src/monitor";
+import { accountForSession, issueLoginToken, redeemLoginToken } from "../src/auth";
+import { alertEmail, purgeExpired, runMonitoring } from "../src/monitor";
 import { type TestD1, testDb } from "./d1";
 
 let db: TestD1 & D1Database;
@@ -236,5 +236,79 @@ describe("the alert email", () => {
       "2026-08-10",
     );
     expect(mail.text).toContain("2026-08-10");
+  });
+});
+
+describe("purging spent credentials", () => {
+  it("deletes a login token the moment it has been used", async () => {
+    const token = await issueLoginToken(db, "ada@example.org", "Ada");
+    await redeemLoginToken(db, token);
+    expect(db.raw("SELECT * FROM login_token")).toHaveLength(1);
+
+    await purgeExpired({ DB: db });
+
+    // A used token is a dead credential. Keeping it serves nothing.
+    expect(db.raw("SELECT * FROM login_token")).toHaveLength(0);
+  });
+
+  it("deletes an expired but unused login token", async () => {
+    await issueLoginToken(db, "ada@example.org", "Ada");
+    const past = new Date(Date.now() - 60_000).toISOString();
+    db.exec(`UPDATE login_token SET expires_at = '${past}'`);
+
+    await purgeExpired({ DB: db });
+
+    expect(db.raw("SELECT * FROM login_token")).toHaveLength(0);
+  });
+
+  it("leaves a live login token alone", async () => {
+    await issueLoginToken(db, "ada@example.org", "Ada");
+    await purgeExpired({ DB: db });
+    // Purging must not log out somebody mid-sign-in.
+    expect(db.raw("SELECT * FROM login_token")).toHaveLength(1);
+  });
+
+  it("leaves a live session alone", async () => {
+    const token = await issueLoginToken(db, "ada@example.org", "Ada");
+    const result = await redeemLoginToken(db, token);
+
+    await purgeExpired({ DB: db });
+
+    expect(await accountForSession(db, result?.sessionToken)).not.toBeNull();
+  });
+
+  it("deletes a session expired beyond the grace period", async () => {
+    const token = await issueLoginToken(db, "ada@example.org", "Ada");
+    await redeemLoginToken(db, token);
+    const longAgo = new Date(Date.now() - 30 * 24 * 3600_000).toISOString();
+    db.exec(`UPDATE session SET expires_at = '${longAgo}'`);
+
+    await purgeExpired({ DB: db });
+
+    expect(db.raw("SELECT * FROM session")).toHaveLength(0);
+  });
+
+  it("keeps a just-expired session through the grace period", async () => {
+    const token = await issueLoginToken(db, "ada@example.org", "Ada");
+    const result = await redeemLoginToken(db, token);
+    const justNow = new Date(Date.now() - 1000).toISOString();
+    db.exec(`UPDATE session SET expires_at = '${justNow}'`);
+
+    await purgeExpired({ DB: db });
+
+    // The row survives, but it still does not authenticate anyone - expiry is enforced on
+    // read, not by deletion, so the grace period cannot extend a session by accident.
+    expect(db.raw("SELECT * FROM session")).toHaveLength(1);
+    expect(await accountForSession(db, result?.sessionToken)).toBeNull();
+  });
+
+  it("never touches accounts or rosters", async () => {
+    const id = await account("ada@example.org");
+    await save(id, "271067272", "ready");
+
+    await purgeExpired({ DB: db });
+
+    expect(db.raw("SELECT * FROM account")).toHaveLength(1);
+    expect(db.raw("SELECT * FROM roster_entry")).toHaveLength(1);
   });
 });

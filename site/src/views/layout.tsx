@@ -333,6 +333,7 @@ export const Page: FC<PropsWithChildren<HeadProps>> = ({
           </span>
           <nav class="spacer">
             <a href={REPO}>Open source</a>
+            <a href="/privacy">Privacy</a>
             <a href="/llms.txt">llms.txt</a>
             <a href="/api/check/27-1067272">JSON API</a>
           </nav>

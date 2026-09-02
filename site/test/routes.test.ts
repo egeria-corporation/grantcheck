@@ -107,7 +107,14 @@ describe("the public site stays public", () => {
   });
 
   it("serves landing, methodology, data and explainers with no session", async () => {
-    for (const path of ["/", "/methodology", "/data", "/checks/exempt_status", "/robots.txt"]) {
+    for (const path of [
+      "/",
+      "/methodology",
+      "/data",
+      "/privacy",
+      "/checks/exempt_status",
+      "/robots.txt",
+    ]) {
       expect((await get(path)).status, path).toBe(200);
     }
   });

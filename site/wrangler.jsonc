@@ -3,7 +3,21 @@
   "name": "check-opengrants-io",
   "main": "src/index.tsx",
   "compatibility_date": "2026-01-01",
-  "observability": { "enabled": true },
+  // Invocation logs OFF, deliberately.
+  //
+  // An invocation log records the request — including its URL — for 7 days. For this site the
+  // URL *is* the sensitive fact: /ein/12-3456789 is a record of who looked up which
+  // organization, which is precisely what the architecture's privacy section forbids and what
+  // the sign-in page promises we do not keep. Leaving them on would have meant weakening the
+  // promise to match the infrastructure; this changes the infrastructure to match the promise.
+  //
+  // Custom logs still work, so console.error on a failed mail send is still visible. What is
+  // given up is per-request debugging, which is a fair price and, if it is ever really needed,
+  // can be bought back temporarily with `wrangler tail` rather than by retaining logs.
+  "observability": {
+    "enabled": true,
+    "logs": { "invocation_logs": false }
+  },
 
   // Edge SSR from D1, not a pre-rendered site. There are ~1.4M 501(c)(3) organizations and
   // Cloudflare Pages allows 20,000 files per deployment on the free plan, 100,000 on paid.

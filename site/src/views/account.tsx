@@ -99,6 +99,10 @@ export const Join: FC<{ next?: string; error?: string; email?: string }> = ({
         anywhere.
       </li>
     </ul>
+    <p class="prose">
+      All of that is stated in full, in the terms the law uses, in our{" "}
+      <a href="/privacy">privacy policy</a>.
+    </p>
     <Disclosure />
   </Shell>
 );
@@ -415,8 +419,9 @@ export const AccountPage: FC<{
     <h2>What we hold</h2>
     <p class="prose">
       Your name, your email address, and the EINs you saved. Nothing else. There is no record of
-      which reports you read: report pages are served from cache and are never associated with an
-      account, signed in or not.
+      which reports you read: report pages are served from cache, are never associated with an
+      account, and per-request logging is switched off at the infrastructure level. The full account
+      is in our <a href="/privacy">privacy policy</a>.
     </p>
 
     <h2>Leaving</h2>

@@ -76,6 +76,31 @@ Stop these emails by deleting your account: https://check.opengrants.io/account
 }
 
 /**
+ * Delete spent credentials.
+ *
+ * A login token is dead the moment it is used or expires, and a session is dead once it
+ * expires, but nothing was removing either — so both tables grew without bound and every
+ * row was a dead credential kept for no reason. Data that serves no purpose should not be
+ * retained, and a retention statement in a privacy policy has to be true.
+ *
+ * Expired login tokens go immediately: fifteen minutes is the whole life of one, so there is
+ * nothing to keep. Expired sessions get a short grace period, because a row that has just
+ * expired is what distinguishes "your session ended" from "that session never existed" if
+ * anyone ever has to look into a report of being logged out.
+ */
+export async function purgeExpired(env: Env, now = new Date()): Promise<number> {
+  const cutoff = now.toISOString();
+  const sessionCutoff = new Date(now.getTime() - 7 * 24 * 3600_000).toISOString();
+  const results = await env.DB.batch([
+    env.DB.prepare("DELETE FROM login_token WHERE expires_at < ? OR used_at IS NOT NULL").bind(
+      cutoff,
+    ),
+    env.DB.prepare("DELETE FROM session WHERE expires_at < ?").bind(sessionCutoff),
+  ]);
+  return results.reduce((n, r) => n + ((r.meta as { changes?: number })?.changes ?? 0), 0);
+}
+
+/**
  * Re-check every saved organization and notify the accounts whose verdicts moved.
  *
  * One pass over the whole table, grouped by account, so a person with forty organizations

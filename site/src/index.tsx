@@ -11,7 +11,7 @@ import { Hono } from "hono";
 import { getCookie } from "hono/cookie";
 import { cors } from "hono/cors";
 import { SESSION_COOKIE, accountForSession } from "./auth";
-import { runMonitoring } from "./monitor";
+import { purgeExpired, runMonitoring } from "./monitor";
 import type { OrgRow, Vintage } from "./report";
 import { buildReport, formatEin, normalizeEin } from "./report";
 import type { Bindings } from "./routes/account";
@@ -19,6 +19,7 @@ import { accountRoutes } from "./routes/account";
 import { CheckExplainer, Data, Methodology } from "./views/content";
 import { Entity, NotFound } from "./views/entity";
 import { Landing } from "./views/landing";
+import { Privacy } from "./views/privacy";
 import { LLMS_TXT, ROBOTS_TXT } from "./views/robots";
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -166,6 +167,11 @@ app.get("/checks/:id", (c) => {
   return page ? c.html(page) : c.notFound();
 });
 
+app.get("/privacy", (c) => {
+  c.header("Cache-Control", STATIC_CACHE);
+  return c.html(<Privacy canonical={canonicalUrl(c, "/privacy")} />);
+});
+
 app.get("/methodology", (c) => {
   c.header("Cache-Control", STATIC_CACHE);
   return c.html(<Methodology canonical={canonicalUrl(c, "/methodology")} />);
@@ -229,6 +235,10 @@ export default {
    * organization, and emails only the accounts whose verdicts actually moved.
    */
   async scheduled(_event: ScheduledController, env: Bindings, ctx: ExecutionContext) {
-    ctx.waitUntil(runMonitoring(env));
+    ctx.waitUntil(
+      // Purge first, so a run that fails partway through has still dropped the dead
+      // credentials. Retention is a promise; monitoring is a feature.
+      purgeExpired(env).then(() => runMonitoring(env)),
+    );
   },
 };

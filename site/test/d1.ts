@@ -62,9 +62,13 @@ class Stmt {
     return { results: rows as T[], success: true };
   }
 
-  async run(): Promise<{ success: true }> {
-    this.db.prepare(this.sql).run(...(this.args() as never[]));
-    return { success: true };
+  async run(): Promise<{ success: true; meta: { changes: number } }> {
+    const result = this.db.prepare(this.sql).run(...(this.args() as never[])) as {
+      changes?: number | bigint;
+    };
+    // D1 reports affected rows on meta.changes; node:sqlite puts it on the result directly
+    // (and as a BigInt). Callers that count deletions read the D1 shape.
+    return { success: true, meta: { changes: Number(result?.changes ?? 0) } };
   }
 }
 
