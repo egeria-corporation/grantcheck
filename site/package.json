@@ -11,7 +11,7 @@
     "format": "biome format --write .",
     "test": "vitest run",
     "db:seed:local": "wrangler d1 execute grantcheck --local --file=./schema.sql",
-    "seed": "node scripts/seed-from-index.mjs"
+    "seed": "python scripts/seed_from_index.py"
   },
   "dependencies": {
     "hono": "^4.6.0"
