@@ -41,11 +41,39 @@ CREATE TABLE IF NOT EXISTS organization (
   sam_expiration           TEXT,
   sam_purpose              TEXT,
   sam_match_confidence     REAL,
-  sam_match_method         TEXT
+  sam_match_method         TEXT,
+  -- Which published index vintage last wrote this row. The monthly refresh stamps every
+  -- row it writes and then deletes whatever it did not touch, which is how organizations
+  -- the IRS has dropped stop being reported on. Without it a removed organization would
+  -- linger in D1 forever, and the site would answer for a record the CLI no longer has.
+  vintage                  TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_org_state_name ON organization(state, name);
 CREATE INDEX IF NOT EXISTS idx_org_name ON organization(name);
+
+-- Full-text search over organization names.
+--
+-- The obvious query, `name LIKE '%red cross%'`, cannot use an index: a leading wildcard
+-- forces a full table scan. Measured on the real data that is ~6.5M rows read per search,
+-- which exhausts a month's included reads in a few thousand queries and takes seconds.
+--
+-- `content='organization'` makes this an external-content index: it stores the search
+-- structure but not a second copy of every name, and it is rebuilt from the base table with
+-- a single statement after each monthly load:
+--
+--     INSERT INTO organization_fts(organization_fts) VALUES('rebuild');
+--
+-- There are deliberately NO triggers keeping this in sync. Nothing at runtime writes to
+-- `organization` - it is a derived table, written only by the loader - so a trigger would
+-- add a subtle failure mode for no benefit. Worse, `INSERT OR REPLACE` fires DELETE triggers
+-- only when recursive_triggers is enabled, so a trigger-based design would silently
+-- accumulate duplicate index entries on every monthly load. The loader rebuilds instead.
+CREATE VIRTUAL TABLE IF NOT EXISTS organization_fts USING fts5(
+  name,
+  content='organization',
+  tokenize='unicode61 remove_diacritics 2'
+);
 
 -- Updated last by the ingest, and it is the cache-invalidation key: every edge cache entry
 -- carries these dates, so a new ingest invalidates the whole cache in one step.

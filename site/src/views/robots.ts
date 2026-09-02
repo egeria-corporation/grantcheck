@@ -7,10 +7,18 @@
  * that is not there.
  */
 
+/**
+ * `Disallow: /check` is a prefix match under RFC 9309, so it also blocks `/checks/...` — the
+ * eleven explainers, which are the whole high-intent search surface and are named in the
+ * sitemap. The two anchored rules below block the form target and its query string and
+ * nothing else. `$` and the most-specific-match rule the `Allow` relies on are both RFC 9309.
+ */
 export const ROBOTS_TXT = `User-agent: *
 Allow: /
+Allow: /checks/
 Disallow: /search
-Disallow: /check
+Disallow: /check$
+Disallow: /check?
 
 Sitemap: https://check.opengrants.io/sitemap.xml
 `;

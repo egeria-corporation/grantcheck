@@ -113,10 +113,14 @@ def main() -> int:
             conn.row_factory = sqlite3.Row
             cursor = conn.execute("SELECT * FROM organization")
             if not columns:
-                columns = [d[0] for d in cursor.description]
+                # `vintage` is ours, not the shard's: it is how the refresh identifies rows
+                # the new index no longer contains, so they can be deleted rather than
+                # lingering as organizations the site reports on and the CLI does not.
+                columns = [d[0] for d in cursor.description] + ["vintage"]
 
             for row in cursor:
-                tuple_sql = "(" + ",".join(literal(row[c]) for c in columns) + ")"
+                values = [literal(row[c]) for c in columns[:-1]] + [literal(vintage)]
+                tuple_sql = "(" + ",".join(values) + ")"
                 if pending_bytes + len(tuple_sql) > MAX_STATEMENT_BYTES:
                     flush()
                 pending.append(tuple_sql)
@@ -152,9 +156,22 @@ def main() -> int:
         f"{literal(d['source_url'])},{d['row_count']});"
         for d in manifest["datasets"]
     )
+    # Order matters, and mirrors the discipline the R2 publication already uses: everything
+    # that makes the new data usable happens first, and the marker saying "this is what we
+    # have" is written last. Until dataset_vintage moves, the site keeps reporting the
+    # previous vintage - which is true, because a partial load has not finished becoming the
+    # new one.
     (args.out / "999-post.sql").write_text(
+        "-- 1. Rebuild the secondary indexes dropped for the load.\n"
         "CREATE INDEX IF NOT EXISTS idx_org_state_name ON organization(state, name);\n"
-        "CREATE INDEX IF NOT EXISTS idx_org_name ON organization(name);\n" + vintage_sql + "\n",
+        "CREATE INDEX IF NOT EXISTS idx_org_name ON organization(name);\n"
+        "\n-- 2. Drop organizations the new index no longer contains. `IS NOT` rather than\n"
+        "--    `!=` so that rows predating the vintage column (NULL) are caught too.\n"
+        f"DELETE FROM organization WHERE vintage IS NOT {literal(vintage)};\n"
+        "\n-- 3. Rebuild the search index from the base table. No triggers keep it in sync;\n"
+        "--    see schema.sql for why.\n"
+        "INSERT INTO organization_fts(organization_fts) VALUES('rebuild');\n"
+        "\n-- 4. The commit point, written last.\n" + vintage_sql + "\n",
         encoding="utf-8",
         newline="\n",
     )

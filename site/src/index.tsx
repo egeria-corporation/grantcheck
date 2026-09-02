@@ -16,17 +16,28 @@ import type { OrgRow, Vintage } from "./report";
 import { buildReport, formatEin, normalizeEin } from "./report";
 import type { Bindings } from "./routes/account";
 import { accountRoutes } from "./routes/account";
+import { searchByName } from "./search";
 import { CheckExplainer, Data, Methodology } from "./views/content";
 import { Entity, NotFound } from "./views/entity";
 import { Landing } from "./views/landing";
 import { Privacy } from "./views/privacy";
 import { LLMS_TXT, ROBOTS_TXT } from "./views/robots";
+import {
+  URLS_PER_SITEMAP,
+  entitySitemap,
+  entitySitemapPath,
+  sitemapIndex,
+  staticSitemap,
+} from "./views/sitemap";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+function origin(c: { req: { url: string } }): string {
+  return new URL(c.req.url).origin;
+}
+
 function canonicalUrl(c: { req: { url: string } }, path: string): string {
-  const url = new URL(c.req.url);
-  return `${url.origin}${path}`;
+  return `${origin(c)}${path}`;
 }
 
 async function vintages(db: D1Database): Promise<Record<string, Vintage>> {
@@ -49,6 +60,18 @@ function versionOf(v: Record<string, Vintage>): string {
     .sort()
     .map((k) => v[k]?.published ?? "")
     .join(".");
+}
+
+/**
+ * The newest dataset publication date, which is the last moment anything derived from the
+ * index could have changed. Undefined on an empty index, and then no `lastmod` is emitted.
+ */
+function lastmodOf(v: Record<string, Vintage>): string | undefined {
+  return Object.values(v)
+    .map((entry) => entry.published)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
 }
 
 // Pure IRS-derived pages change monthly at the fastest. Serve stale while revalidating: a
@@ -121,15 +144,7 @@ app.get("/api/check/:ein", async (c) => {
 app.get("/search", async (c) => {
   const q = (c.req.query("q") ?? "").trim();
   c.header("Cache-Control", "public, s-maxage=300");
-  const rows = q
-    ? ((
-        await c.env.DB.prepare(
-          "SELECT ein, name, city, state FROM organization WHERE name LIKE ? LIMIT 20",
-        )
-          .bind(`%${q.toUpperCase()}%`)
-          .all<OrgRow>()
-      ).results ?? [])
-    : [];
+  const rows = q ? await searchByName(c.env.DB, q) : [];
   // noindex: this exists to find an EIN, not to be a directory.
   return c.html(
     <Data
@@ -210,6 +225,75 @@ app.get("/data", async (c) => {
       </table>
     </Data>,
   );
+});
+
+/**
+ * The sitemap index and its children.
+ *
+ * Pagination is a **rowid window**, not `LIMIT ... OFFSET`. SQLite implements an offset by
+ * stepping over the skipped rows one at a time, so `OFFSET 3200000` reads 3.2M rows to
+ * return 50,000 — and D1 bills rows read. One full crawl of 66 pages that way is ~110M row
+ * reads and several page-loads that would sit near the query timeout. `rowid > lo AND rowid
+ * <= hi` is a b-tree seek followed by a scan of exactly that range, so every page costs the
+ * same as the first.
+ *
+ * It also makes the protocol's ceiling structural rather than something to remember: a
+ * window `URLS_PER_SITEMAP` wide can hold at most `URLS_PER_SITEMAP` rows, whatever the data
+ * does. The price is that deleted rows leave gaps, so a page can come back short. That is
+ * allowed — the limit is a maximum, not a quota — and coverage is unaffected, because every
+ * rowid up to the last one falls inside exactly one page.
+ */
+const SITEMAP_XML = { "Content-Type": "application/xml; charset=utf-8" };
+
+async function entitySitemapPages(db: D1Database): Promise<number> {
+  // `max(rowid)` is a single seek to the end of the table b-tree, so this is O(1) at 3.27M
+  // rows. `COUNT(*)` would be a full scan on every sitemap request, and would still be the
+  // wrong number: what bounds the pages is the last rowid, not how many are occupied.
+  const row = await db
+    .prepare("SELECT max(rowid) AS last FROM organization")
+    .first<{ last: number | null }>();
+  return Math.ceil((row?.last ?? 0) / URLS_PER_SITEMAP);
+}
+
+app.get("/sitemap.xml", async (c) => {
+  const [v, pages] = await Promise.all([vintages(c.env.DB), entitySitemapPages(c.env.DB)]);
+  c.header("Cache-Control", ENTITY_CACHE);
+  c.header("X-Index-Vintage", versionOf(v));
+  return c.body(sitemapIndex(origin(c), pages, lastmodOf(v)), 200, SITEMAP_XML);
+});
+
+app.get("/sitemap-static.xml", async (c) => {
+  const v = await vintages(c.env.DB);
+  c.header("Cache-Control", ENTITY_CACHE);
+  c.header("X-Index-Vintage", versionOf(v));
+  return c.body(staticSitemap(origin(c), lastmodOf(v)), 200, SITEMAP_XML);
+});
+
+// A whole-segment pattern, because Hono only matches a parameter against an entire path
+// segment — `/sitemap-:page{[0-9]+}.xml` registers without complaint and then matches
+// nothing, which is the kind of silence a 404 test is for.
+app.get("/:file{sitemap-[0-9]+\\.xml}", async (c) => {
+  const file = c.req.param("file");
+  const page = Number(file.slice("sitemap-".length, -".xml".length));
+  // One URL per sitemap, for the same reason one URL per organization: /sitemap-01.xml and
+  // /sitemap-1.xml must not both be a way to fetch page one.
+  if (entitySitemapPath(page) !== `/${file}`) return c.notFound();
+
+  const [v, pages] = await Promise.all([vintages(c.env.DB), entitySitemapPages(c.env.DB)]);
+  // Bounded, so a crawler that keeps incrementing gets a 404 rather than an endless run of
+  // empty but perfectly valid sitemaps.
+  if (page < 1 || page > pages) return c.notFound();
+
+  const { results } = await c.env.DB.prepare(
+    "SELECT ein FROM organization WHERE rowid > ? AND rowid <= ? ORDER BY rowid",
+  )
+    .bind((page - 1) * URLS_PER_SITEMAP, page * URLS_PER_SITEMAP)
+    .all<{ ein: string }>();
+
+  c.header("Cache-Control", ENTITY_CACHE);
+  c.header("X-Index-Vintage", versionOf(v));
+  const eins = (results ?? []).map((r) => r.ein);
+  return c.body(entitySitemap(origin(c), eins, lastmodOf(v)), 200, SITEMAP_XML);
 });
 
 app.get("/robots.txt", (c) => c.text(ROBOTS_TXT, 200, { "Content-Type": "text/plain" }));

@@ -139,6 +139,78 @@ jobs:
           print(f"verified {url} ({len(blob):,} bytes, checksum matches)")
           PY
 
+      # ------------------------------------------------------------------------------
+      # Keep the hosted site in step with the index it was just handed.
+      #
+      # Without this the site freezes at whatever vintage it was first loaded with, while
+      # the CLI moves on every month. The two would then disagree about the data itself,
+      # which is the one thing the parity discipline cannot catch: the parity test proves
+      # both implementations read the same row the same way, not that they are looking at
+      # the same row.
+      #
+      # This runs AFTER the manifest is published, because it reads the published index
+      # rather than the local build - so what lands in D1 is byte-for-byte what a user
+      # downloads, and a failure here leaves R2 correct and the site merely stale, which is
+      # the safe way round.
+      #
+      # `continue-on-error`: a stale site is a much smaller problem than a failed ingest.
+      # The index is the product; the site is a view of it. If this step breaks, the run
+      # should still be green for the thing that matters, and the site keeps serving the
+      # previous month honestly - it reports its own vintage on every page.
+      - name: Refresh the hosted site's database
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning::CLOUDFLARE_API_TOKEN is not set; the hosted site will keep serving the previous vintage."
+            exit 0
+          fi
+
+          uv run python site/scripts/build_d1_import.py --out /tmp/d1load
+
+          cd site
+          npm install --no-audit --no-fund --silent wrangler@4
+
+          # Drop the secondary indexes first: maintaining two B-trees across 3.3M inserts
+          # costs far more than one rebuild at the end.
+          npx wrangler d1 execute grantcheck --remote --file=/tmp/d1load/000-pre.sql -y
+
+          for f in /tmp/d1load/part-*.sql; do
+            echo "--- $f"
+            npx wrangler d1 execute grantcheck --remote --file="$f" -y
+          done
+
+          # Rebuilds the indexes and the FTS table, deletes organizations the new index no
+          # longer contains, and only then moves dataset_vintage. That last write is the
+          # commit point, exactly as the manifest is for R2.
+          npx wrangler d1 execute grantcheck --remote --file=/tmp/d1load/999-post.sql -y
+
+      - name: Confirm the site and the index agree
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VINTAGE: ${{ steps.vintage.outputs.vintage }}
+        run: |
+          [ -n "$CLOUDFLARE_API_TOKEN" ] || exit 0
+          cd site
+          npx wrangler d1 execute grantcheck --remote --json \
+            --command "SELECT COUNT(*) AS n, COUNT(DISTINCT vintage) AS vintages, MAX(vintage) AS v FROM organization" \
+            | tee /tmp/d1check.json
+          python - <<'PY'
+          import json, os, sys
+          raw = open("/tmp/d1check.json").read()
+          row = json.loads(raw[raw.index("["):])[0]["results"][0]
+          print(row)
+          if row["vintages"] != 1:
+              sys.exit(f"::error::D1 holds {row['vintages']} vintages; the stale-row delete did not run")
+          if row["v"] != os.environ["VINTAGE"]:
+              sys.exit(f"::error::D1 is at {row['v']}, expected {os.environ['VINTAGE']}")
+          print(f"D1 holds {row['n']:,} organizations, all at {row['v']}")
+          PY
+
       - name: Publish the mirror release
         env:
           GH_TOKEN: ${{ github.token }}

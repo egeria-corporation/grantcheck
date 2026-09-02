@@ -26,3 +26,6 @@ data/raw/
 *.zip
 
 dist/
+
+# Wrangler local state, created if wrangler is run from the repo root rather than site/.
+.wrangler/
