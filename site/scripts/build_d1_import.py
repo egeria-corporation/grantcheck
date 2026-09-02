@@ -156,6 +156,28 @@ def main() -> int:
         f"{literal(d['source_url'])},{d['row_count']});"
         for d in manifest["datasets"]
     )
+    # Repopulating the FTS index, in slices.
+    #
+    # The documented one-liner for an external-content table is
+    # `INSERT INTO organization_fts(organization_fts) VALUES('rebuild')`, and it is what this
+    # tried first. Over 3.3M rows D1 rejects it: "D1 DB exceeded its CPU time limit and was
+    # reset" - the whole index is built inside a single statement, and D1 bounds how long one
+    # statement may run. Slicing does identical work in pieces that finish.
+    #
+    # Sliced by EIN prefix rather than by rowid because EINs are stable and known in advance,
+    # while rowids shift as INSERT OR REPLACE rewrites rows. `delete-all` comes first so that
+    # re-running this is idempotent instead of doubling every entry.
+    fts_batches = "\n".join(
+        "INSERT INTO organization_fts(rowid, name) SELECT rowid, name FROM organization "
+        f"WHERE ein >= '{lo:02d}0000000' AND ein < '{lo + 1:02d}0000000';"
+        for lo in range(100)
+    )
+    fts_sql = (
+        "INSERT INTO organization_fts(organization_fts) VALUES('delete-all');\n"
+        + fts_batches
+        + "\n"
+    )
+
     # Order matters, and mirrors the discipline the R2 publication already uses: everything
     # that makes the new data usable happens first, and the marker saying "this is what we
     # have" is written last. Until dataset_vintage moves, the site keeps reporting the
@@ -168,10 +190,12 @@ def main() -> int:
         "\n-- 2. Drop organizations the new index no longer contains. `IS NOT` rather than\n"
         "--    `!=` so that rows predating the vintage column (NULL) are caught too.\n"
         f"DELETE FROM organization WHERE vintage IS NOT {literal(vintage)};\n"
-        "\n-- 3. Rebuild the search index from the base table. No triggers keep it in sync;\n"
-        "--    see schema.sql for why.\n"
-        "INSERT INTO organization_fts(organization_fts) VALUES('rebuild');\n"
-        "\n-- 4. The commit point, written last.\n" + vintage_sql + "\n",
+        "\n-- 3. Repopulate the search index from the base table. No triggers keep it in\n"
+        "--    sync; see schema.sql for why.\n"
+        + fts_sql
+        + "\n-- 4. The commit point, written last.\n"
+        + vintage_sql
+        + "\n",
         encoding="utf-8",
         newline="\n",
     )

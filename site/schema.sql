@@ -59,10 +59,14 @@ CREATE INDEX IF NOT EXISTS idx_org_name ON organization(name);
 -- which exhausts a month's included reads in a few thousand queries and takes seconds.
 --
 -- `content='organization'` makes this an external-content index: it stores the search
--- structure but not a second copy of every name, and it is rebuilt from the base table with
--- a single statement after each monthly load:
+-- structure but not a second copy of every name, and it is repopulated from the base table
+-- after each monthly load.
 --
---     INSERT INTO organization_fts(organization_fts) VALUES('rebuild');
+-- NOT with the documented one-liner. `INSERT INTO organization_fts(organization_fts)
+-- VALUES('rebuild')` builds the whole index inside a single statement, and over 3.3M rows
+-- D1 rejects it: "D1 DB exceeded its CPU time limit and was reset". build_d1_import.py
+-- emits the same work sliced by EIN prefix, preceded by a 'delete-all' so a re-run is
+-- idempotent rather than doubling every entry.
 --
 -- There are deliberately NO triggers keeping this in sync. Nothing at runtime writes to
 -- `organization` - it is a derived table, written only by the loader - so a trigger would
