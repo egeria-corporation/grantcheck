@@ -30,14 +30,18 @@ import { Page, REPO } from "./layout";
 /**
  * Everything the operator has to fill in, in one place.
  *
- * TODO(before launch): CONTACT_EMAIL must be a real, monitored mailbox — it is where
- * deletion, access and correction requests arrive, and several state privacy laws require a
- * working channel. POSTAL_ADDRESS is likewise required by the CCPA for a business that
- * serves California residents, which this one will.
+ * `email` is deliberately on opengrants.io rather than the oss.opengrants.io subdomain we
+ * send from: that subdomain has no MX record and cannot receive mail at all, so an address
+ * there would be a contact channel that silently swallows every deletion and access request
+ * — the opposite of what several state privacy laws require. The same address is the
+ * Reply-To on outbound mail, so replying to an alert reaches a person.
+ *
+ * TODO(before launch): `postal` is required by the CCPA for a business serving California
+ * residents, which this one will.
  */
 export const PRIVACY_CONTACT = {
   entity: "Egeria Corporation",
-  email: "privacy@opengrants.io",
+  email: "support@opengrants.io",
   postal: "[POSTAL ADDRESS — required before launch]",
   effective: "2026-09-01",
 };

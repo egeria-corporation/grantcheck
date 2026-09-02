@@ -70,7 +70,12 @@ determination, and not legal, tax, or accounting advice. Verify against the offi
 source before relying on it.
 
 Your roster: https://check.opengrants.io/roster
-Stop these emails by deleting your account: https://check.opengrants.io/account
+
+To stop these emails, remove organizations from your roster - monitoring only
+reports on what you saved. To remove everything including your account, and have
+it deleted immediately: https://check.opengrants.io/account
+
+Replies to this message reach a person.
 `,
   };
 }

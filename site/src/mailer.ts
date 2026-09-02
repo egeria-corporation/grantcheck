@@ -17,11 +17,22 @@ export type Mailer = {
   send(message: { to: string; subject: string; text: string }): Promise<boolean>;
 };
 
+/**
+ * Where replies go.
+ *
+ * We send from a subdomain that has no MX record, so a reply to the From address bounces
+ * into nothing. People do reply to alerts — to ask a question, or to say stop — and a
+ * product that silently discards those is worse than one that never invited them. This is
+ * on the parent domain, which receives.
+ */
+export const REPLY_TO = "support@opengrants.io";
+
 /** No provider configured. Logs the link so development works with nothing set up. */
 export const consoleMailer: Mailer = {
   async send({ to, subject, text }) {
     console.log(
-      `\n--- email (no provider configured) ---\nto: ${to}\nsubject: ${subject}\n\n${text}\n---\n`,
+      `\n--- email (no provider configured) ---\nto: ${to}\nreply-to: ${REPLY_TO}\n` +
+        `subject: ${subject}\n\n${text}\n---\n`,
     );
     return true;
   },
@@ -44,7 +55,7 @@ export function resendMailer(apiKey: string, from: string): Mailer {
             // cheap insurance, not decoration.
             "User-Agent": "grantcheck (+https://github.com/egeria-corporation/grantcheck)",
           },
-          body: JSON.stringify({ from, to: [to], subject, text }),
+          body: JSON.stringify({ from, to: [to], subject, text, reply_to: REPLY_TO }),
         });
 
         if (!response.ok) {
