@@ -24,6 +24,10 @@ permissions:
   contents: write # to create the mirror release
 
 env:
+  # Not a secret, and not treated as one: it is already the subdomain of R2_ENDPOINT below,
+  # in this same file. Requiring it as a repository secret would add a step to set up
+  # without hiding anything.
+  CLOUDFLARE_ACCOUNT_ID: a5a2b776dd851a4e605683ef858e50de
   R2_ENDPOINT: https://a5a2b776dd851a4e605683ef858e50de.r2.cloudflarestorage.com
   R2_BUCKET: grantcheck-index
   PUBLIC_BASE: https://index.check.opengrants.io
@@ -161,7 +165,6 @@ jobs:
         continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
             echo "::warning::CLOUDFLARE_API_TOKEN is not set; the hosted site will keep serving the previous vintage."
@@ -191,7 +194,6 @@ jobs:
         continue-on-error: true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           VINTAGE: ${{ steps.vintage.outputs.vintage }}
         run: |
           [ -n "$CLOUDFLARE_API_TOKEN" ] || exit 0
