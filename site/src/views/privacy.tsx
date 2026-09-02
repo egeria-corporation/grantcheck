@@ -28,7 +28,8 @@ import type { FC } from "hono/jsx";
 import { Page, REPO } from "./layout";
 
 /**
- * Everything the operator has to fill in, in one place.
+ * The contact details, in one place, because they appear in several sections and a policy
+ * that gives two different addresses for the same purpose is worse than one that gives none.
  *
  * `email` is deliberately on opengrants.io rather than the oss.opengrants.io subdomain we
  * send from: that subdomain has no MX record and cannot receive mail at all, so an address
@@ -36,13 +37,17 @@ import { Page, REPO } from "./layout";
  * — the opposite of what several state privacy laws require. The same address is the
  * Reply-To on outbound mail, so replying to an alert reaches a person.
  *
- * TODO(before launch): `postal` is required by the CCPA for a business serving California
- * residents, which this one will.
+ * The postal address is not decoration either: the CCPA requires a business serving
+ * California residents to offer a non-electronic way to reach it.
  */
 export const PRIVACY_CONTACT = {
   entity: "Egeria Corporation",
   email: "support@opengrants.io",
-  postal: "[POSTAL ADDRESS — required before launch]",
+  street: "705 Gold Lake Drive, Suite 250",
+  locality: "Folsom",
+  region: "CA",
+  postalCode: "95630",
+  country: "USA",
   effective: "2026-09-01",
 };
 
@@ -512,10 +517,25 @@ export const Privacy: FC<{ canonical: string }> = ({ canonical }) => (
     <ul class="plain prose">
       <li>
         <strong>Email:</strong>{" "}
-        <a href={`mailto:${PRIVACY_CONTACT.email}`}>{PRIVACY_CONTACT.email}</a>
+        <a href={`mailto:${PRIVACY_CONTACT.email}`}>{PRIVACY_CONTACT.email}</a> — read by a person,
+        and the address replies to our emails go to.
       </li>
       <li>
-        <strong>Post:</strong> {PRIVACY_CONTACT.entity}, {PRIVACY_CONTACT.postal}
+        <strong>Post:</strong>
+        {/* A real <address> element, so a screen reader announces it as an address and a
+            parser can lift it. Marked up with h-card class names for the same reason the
+            entity pages carry schema.org: machine-readable costs nothing here. */}
+        <address class="postal h-card">
+          <span class="p-name">{PRIVACY_CONTACT.entity}</span>
+          <br />
+          <span class="p-street-address">{PRIVACY_CONTACT.street}</span>
+          <br />
+          <span class="p-locality">{PRIVACY_CONTACT.locality}</span>,{" "}
+          <span class="p-region">{PRIVACY_CONTACT.region}</span>{" "}
+          <span class="p-postal-code">{PRIVACY_CONTACT.postalCode}</span>
+          <br />
+          <span class="p-country-name">{PRIVACY_CONTACT.country}</span>
+        </address>
       </li>
     </ul>
 

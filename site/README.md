@@ -15,7 +15,9 @@ Open to everyone, no account, fully crawlable:
 
 - `/ein/:ein` — the report page for one organization
 - `/api/check/:ein` — the same report as JSON, CORS open, no key
-- `/checks/:id`, `/methodology`, `/data`, `/llms.txt`
+- `/checks/:id`, `/methodology`, `/data`, `/privacy`, `/llms.txt`
+- `/sitemap.xml` — a sitemap index over `/sitemap-static.xml` and `/sitemap-N.xml`,
+  paginated at 50,000 URLs and generated from D1 on request
 
 Behind a sign-in:
 
@@ -110,17 +112,16 @@ Monitoring runs from a cron trigger on the 8th at 14:00 UTC, after the monthly i
 time to land. It re-checks every saved organization and emails only the accounts whose
 verdicts actually changed — a month in which nothing moves sends nothing at all.
 
-## Before real accounts exist
+## Privacy
 
-The privacy policy is written and served at `/privacy`, but **two placeholders in
-`src/views/privacy.tsx` must be filled first** — they are together in `PRIVACY_CONTACT`:
-
-- `email` — must be a real, monitored mailbox. It is where access, correction and deletion
-  requests arrive, and several state privacy laws require a working channel.
-- `postal` — the CCPA requires a postal address for a business serving California residents,
-  which this one will.
+The policy is served at `/privacy` and its contact details live in one constant,
+`PRIVACY_CONTACT` in `src/views/privacy.tsx`. Both are filled in and live:
+`support@opengrants.io` (which is also the Reply-To on outbound mail) and the Folsom postal
+address the CCPA requires.
 
 The policy makes specific negative claims — no analytics, one cookie, two service providers,
 no sale or sharing, no request logs. Each is true of the code today and each is checkable.
 **Re-read it against the code before adding any dependency that talks to a third party**, and
-before turning invocation logging back on in `wrangler.jsonc`.
+before turning invocation logging back on in `wrangler.jsonc`. A policy that describes a
+product you no longer have is worse than none.
+

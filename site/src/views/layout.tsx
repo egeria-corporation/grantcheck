@@ -263,6 +263,10 @@ button.link {
 button.link:hover { color: var(--accent); filter: none; }
 
 .formerror { border-left: 3px solid var(--fail); background: var(--fail-soft); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; font-size: 15px; max-width: var(--measure); }
+/* A postal address renders as a block, not run into the sentence before it. Browsers
+   italicise <address> by default, which reads as emphasis it does not have. */
+address.postal { font-style: normal; margin: 6px 0 0 0; line-height: 1.55; color: var(--ink-soft); }
+
 .formok { border-left: 3px solid var(--pass); background: var(--accent-soft); padding: 12px 16px; border-radius: 0 var(--radius) var(--radius) 0; font-size: 15px; max-width: var(--measure); }
 `;
 
